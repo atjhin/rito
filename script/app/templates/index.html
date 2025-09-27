@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Flask + JS Frontend</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+    }
+    button {
+      margin: 0.5rem 0;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flask + JavaScript Frontend</h1>
+  <button id="sendBtn">Send Data to Flask</button>
+  <pre id="output"></pre>
+
+  <script>
+    const output = document.getElementById('output');
+    const btn = document.getElementById('sendBtn');
+
+    btn.addEventListener('click', async () => {
+      // Send POST to /api/echo
+      const res = await fetch('/api/echo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'You suck!' })
+      });
+      const data = await res.json();
+      output.textContent = JSON.stringify(data, null, 2);
+    });
+  </script>
+</body>
+</html>
