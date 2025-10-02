@@ -57,6 +57,10 @@ SECTION_PERS_CANDIDATES = [
     "personality", "traits", "temperament", "quirks", "mannerisms"
 ]
 
+SECTION_APPEARANCE_CANDIDATES = [
+    "appearance", "looks", "physical description", "physical characteristics"
+]
+
 def norm_text(s: str) -> str:
     s = re.sub(r"\s+\n", "\n", s)
     s = re.sub(r"[ \t]{2,}", " ", s)
@@ -121,6 +125,7 @@ def scrape_character_page(title: str) -> Optional[Dict]:
     page_title = h1.get_text(strip=True) if h1 else title
     background = extract_named_section(soup, SECTION_BG_CANDIDATES)
     personality = extract_named_section(soup, SECTION_PERS_CANDIDATES)
+    appearance = extract_named_section(soup, SECTION_APPEARANCE_CANDIDATES)
 
     # Parse portable-infobox data (pi-item pi-data) into a small dict
     infobox = {}
@@ -141,6 +146,7 @@ def scrape_character_page(title: str) -> Optional[Dict]:
         "infobox": infobox,
         "background": background or "",
         "personality": personality or "",
+        "appearance": appearance or "",
     }
 
 def scrape_all_champions(limit: Optional[int] = None) -> List[Dict]:
