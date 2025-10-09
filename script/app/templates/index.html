@@ -27,11 +27,11 @@
     const btn = document.getElementById('sendBtn');
 
     btn.addEventListener('click', async () => {
-      // Send POST to /api/echo
-      const res = await fetch('/api/echo', {
+      // Send POST to /api/story
+      const res = await fetch('/api/story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'You suck!' })
+        body: JSON.stringify({ character1: 'Ahri', character2: 'Jinx', context: 'A bustling cityscape' })
       });
       const data = await res.json();
       output.textContent = JSON.stringify(data, null, 2);
