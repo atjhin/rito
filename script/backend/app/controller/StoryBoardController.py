@@ -1,4 +1,3 @@
-from ..entities.StoryBoard import StoryBoard
 from app import supabase
 
 
