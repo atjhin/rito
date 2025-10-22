@@ -22,15 +22,15 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
 from langchain_core.tools import BaseTool
 
-from constants import Role, ModelChoices
-
+from .constants import Role, ModelChoices
+from abc import ABC, abstractmethod
 
 class AgentState(TypedDict, total=False):
     """Runtime state passed between graph nodes."""
     messages: List[BaseMessage]
-    system_preset: Dict[Role, str]   # persona/system text per role
-    human_message: Dict[Role, HumanMessage]
-    lore: Dict[Role, str]            # optional lore per role (not used directly here)
+    # system_preset: Dict[Role, str]   # persona/system text per role
+    # human_message: Dict[Role, HumanMessage]
+    # lore: Dict[Role, str]            # optional lore per role (not used directly here)
     model: ModelChoices              # optional: requested model for this turn
 
 
@@ -83,7 +83,7 @@ class ModelConfig:
         return self._llm
 
 
-class Agent:
+class Agent(ABC):
     """
     Callable agent node that maintains tools, switches models, and appends the AI reply.
 
@@ -104,6 +104,28 @@ class Agent:
         self._models: Dict[str, ModelConfig] = {}
         self._active_model_key: Optional[str] = None
         self._tools: List[BaseTool] = []
+        self._system_message = self._init_system_message()
+        self._human_message = self._init_human_message()
+
+        if not isinstance(self._system_message, SystemMessage):
+            raise TypeError(
+                f"{self.__class__.__name__}: _init_system_message() must return a SystemMessage, "
+                f"got {type(self._system_message).__name__}"
+            )
+
+        if not isinstance(self._human_message, HumanMessage):
+            raise TypeError(
+                f"{self.__class__.__name__}: _init_human_message() must return a HumanMessage, "
+                f"got {type(self._human_message).__name__}"
+            )
+
+    @abstractmethod
+    def _init_system_message(self):
+        pass
+
+    @abstractmethod
+    def _init_human_message(self):
+        pass
 
     def register_model(self, key: ModelChoices, cfg: ModelConfig):
         """
@@ -125,7 +147,7 @@ class Agent:
         """
         self._tools.extend(tools)
 
-    def __call__(self, state: AgentState) -> AgentState:
+    def __call__(self, state: AgentState, add_to_state: bool = True) -> AgentState:
         """
         Execute an LLM call for the given state and return the updated state.
         - If `state.model` is provided, switch to that registered model.
@@ -142,7 +164,9 @@ class Agent:
         if self._tools:
             llm = llm.bind_tools(self._tools)
 
-        messages_for_ai = [SystemMessage(content=state["system_preset"][self.role_name])] + state["messages"] + [state["human_message"][self.role_name]]
+        messages_for_ai = [self._system_message] + state["messages"] + [self._human_message]
         
         ai = llm.invoke(messages_for_ai)
-        return {"messages": state["messages"] + [ai]}
+        updated_message = state["messages"] + [ai] if add_to_state else state["messages"]
+        return {"messages": updated_message, "ai_response": ai}
+        # return {"messages": state["messages"] + [ai]} if add_to_state else {"messages": state["messages"]}
