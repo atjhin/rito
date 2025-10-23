@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request
-from .controller.StoryBoardController import create_story
+from .database.supabase import create_story
 # Create a Blueprint named 'main'
 bp = Blueprint('main', __name__)
 
