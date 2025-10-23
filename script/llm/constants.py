@@ -12,7 +12,7 @@ class Role(Enum):
         return obj
 
 roles = {}
-with open("champion_temperatures.txt") as f:
+with open("llm/champions.txt") as f:
     for line in f:
         line = line.strip()
         if not line:
@@ -24,13 +24,9 @@ with open("champion_temperatures.txt") as f:
                 .replace(".", "")
                 .replace("&", "And")
         )
-        roles[identifier] = (name, float(temp))
+        roles[identifier] = name
 
 Role = Enum("Role", roles, type=Role)
-
-Role = Enum("Role", {**Role.__members__,
-                     "Narrator": ("Narrator", 0.2),
-                     "StoryTeller": ("StoryTeller", 0.5)}, type=Role)
 
 
 class ModelChoices(Enum):

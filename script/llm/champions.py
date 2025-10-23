@@ -5,6 +5,10 @@ from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from .agent import Agent, AgentState
 from .constants import Role
 
+def get_lore(name):
+    #TODO
+    return ""
+
 class ChampionBot(Agent):
     def __init__(self, role_name: Role, traits: Optional[Set[str]] = None):
         self.traits = traits if traits is not None else set()
@@ -26,8 +30,8 @@ class ChampionBot(Agent):
             ```
 
             """
-        lore = get_lore(self.role_name) # To be defined
-        return SystemMessage(content=prompt.format(champion=self.role_name, traits=', '.join(self.traits), lore=lore))
+        lore = get_lore(self.role_name.value) # To be defined
+        return SystemMessage(content=prompt.format(champion=self.role_name.value, traits=', '.join(self.traits), lore=lore))
 
     def _init_human_message(self) -> HumanMessage:
         """
@@ -42,7 +46,7 @@ class ChampionBot(Agent):
             - If you are unsure, improvise.
             - Follow the script's latest event and improvise.
         """
-        return HumanMessage(content=prompt.format(champion=self.role_name))
+        return HumanMessage(content=prompt.format(champion=self.role_name.value))
 
 
     def __call__(self, state: AgentState) -> AgentState:
@@ -91,14 +95,9 @@ class RoleAssignerBot(Agent):
         Returns the human message ...
         """
         prompt = """
-        Continue the following script by answering the dialogue and/or acting. FOLLOW THE RULES BELOW
-            - Always prefix your response with {champion}: <answer>. 
-            - Never remain silent.
-            - All act should be enclosed with brackets.
-            - If you are unsure, improvise.
-            - Follow the script's latest event and improvise.
+        Based on the script above, determine which champion should go next or event.
         """
-        return HumanMessage(content=prompt.format(champion=self.role_name))
+        return HumanMessage(content=prompt)
 
 
     def __call__(self, state: AgentState) -> AgentState:
@@ -154,7 +153,7 @@ class EventCreatorBot(Agent):
         Scenario: 
         {scenario}
         """
-        return HumanMessage(content=prompt.format(champion=self.role_name, scenario=self.scenario))
+        return HumanMessage(content=prompt.format(champion=self.role_name.value, scenario=self.scenario))
 
 
     def __call__(self, state: AgentState) -> AgentState:
@@ -274,6 +273,6 @@ class SummarizerBot(Agent):
 
         summary = llm.invoke([self._system_message, *head, self._human_message])
 
-        new_state: AgentState = {**state, "messages": summary + tail}
-        return new_state
+        state["messages"] = [summary] + tail
+        return state
         

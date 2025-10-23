@@ -169,3 +169,7 @@ Ziggs 0.30
 Zilean 0.50
 Zoe 0.75
 Zyra 0.75
+Summarizer 0.1
+Novel 1.0
+Event 1.0
+Role 0.01
