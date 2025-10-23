@@ -260,10 +260,10 @@ class SummarizerBot(Agent):
         messages: List[BaseMessage] = state.get("messages", [])  
         if not messages or len(messages) <= self.k_keep:
             # Nothing to compress; pass through unchanged
-            return super().__call__(state, add_to_state=False)
+            return state
 
-        head = messages[:-self.k_keep]
-        tail = messages[-self.k_keep:]
+        head = messages[:-self.k_keep//2]
+        tail = messages[-self.k_keep//2:]
 
         # Get active LLM from the Agent's registry
         if self._active_model_key is None:
