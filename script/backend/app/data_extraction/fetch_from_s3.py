@@ -1,4 +1,5 @@
 
+import json
 
 def fetch_data_from_s3(character_name, attribute, source="champions_fandom"):
     import boto3
@@ -50,10 +51,53 @@ def fetch_data_from_s3(character_name, attribute, source="champions_fandom"):
         print(f"An error occurred: {e}")
         return None
     
-if __name__ == "__main__":
-    character = "Ahri"  # Example character
-    attribute = "background"  # Example attribute
+def get_all_characters_from_s3(source="champions_fandom"):
+    import boto3
+    from botocore.exceptions import NoCredentialsError, PartialCredentialsError
+    import os
+    from dotenv import load_dotenv
+    import json
 
-    data = fetch_data_from_s3(character, attribute)
-    if data:
-        print(f"{attribute.capitalize()} of {character}:\n{data}")
+    basedir = os.path.dirname(os.path.abspath(__file__))
+    env_path = os.path.join(basedir, '.env')
+    load_dotenv(env_path)
+
+    bucket = os.getenv("S3_BUCKET")
+
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=os.getenv("S3_ACCESS_KEY"),
+        aws_secret_access_key=os.getenv("S3_SECRET_KEY"),
+        region_name=os.getenv("S3_REGION")
+    )
+
+    try:
+        prefix = f"{source}/"
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, Delimiter='/')
+        if 'CommonPrefixes' not in response:
+            print("No characters found.")
+            return []
+        characters = [cp['Prefix'].split('/')[-2] for cp in response['CommonPrefixes']]
+        return characters
+    except (NoCredentialsError, PartialCredentialsError):
+        print("Error: AWS credentials not found or incomplete.")
+        return []
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []
+    
+
+    
+if __name__ == "__main__":
+    # character = "Ahri"  # Example character
+    # attribute = "background"  # Example attribute
+
+    # data = fetch_data_from_s3(character, attribute)
+    # if data:
+    #     print(f"{attribute.capitalize()} of {character}:\n{data}")
+
+    all_characters = get_all_characters_from_s3()
+
+    # save to file
+    with open("../temp_data/characters_from_s3.json", "w") as f:
+        json.dump(all_characters, f, indent=4)

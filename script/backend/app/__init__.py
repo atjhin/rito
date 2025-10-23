@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 
-from .database.supabase import get_characters
+from .database.supabase_calls import get_characters
 
 def create_app():
     basedir = os.path.dirname(os.path.abspath(__file__))

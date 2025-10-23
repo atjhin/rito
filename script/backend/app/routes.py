@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request
-from .database.supabase import create_story
+from .database.supabase_calls import insert_character
 # Create a Blueprint named 'main'
 bp = Blueprint('main', __name__)
 
@@ -11,7 +11,7 @@ def index():
 def get_story_details():
     try:
         data = request.get_json()
-        result = create_story(data)
+        result = insert_character(data)
         return jsonify(result), 201
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
