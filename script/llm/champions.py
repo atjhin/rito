@@ -239,6 +239,17 @@ class SummarizerBot(Agent):
         You are a memory compressor for a multi-character roleplay. Produce a concise running memory preserving: (1) key plot facts, (2) each speaker's intentions, (3) unresolved threads, and (4) world-state changes and commitments. Keep names consistent. Do not invent new facts. Aim ~120–200 words.
         """
         return SystemMessage(content=prompt)
+    
+    def _init_human_message(self) -> HumanMessage:
+        """
+        Returns the human message defining the summarization input format.
+        """
+        prompt = """
+       Given the earlier conversation above, produce a summary with the following Output format:
+        1) Short paragraph summary (3–6 sentences).
+        2) Bulleted 'open threads' checklist, if any (<=5 bullets).
+        """
+        return HumanMessage(content=prompt)
 
 
     def __call__(self, state: AgentState) -> AgentState:
@@ -259,22 +270,8 @@ class SummarizerBot(Agent):
             raise RuntimeError("SummarizerBot: no active model set. Call register_model() and set_active_model().")
         llm = self._models[self._active_model_key].get_llm()  
 
-
-        sys_msg = self._init_system_message()
-        user_msg = HumanMessage(content=(
-            """
-            Summarize the EARLIER conversation below for carry-over memory. 
-            Focus on durable facts, goals/plans, conflicts, constraints, and style cues.
-            === BEGIN EARLIER MESSAGES ===
-            {head}
-            === END EARLIER MESSAGES ===
-            Output format:
-            1) Short paragraph summary (3–6 sentences).
-            2) Bulleted 'open threads' checklist, if any (<=5 bullets).
-            """
-        ))
-
-        summary = llm.invoke([sys_msg, user_msg])
+        summary = llm.invoke([self._system_message, *head, self._human_message])
 
         new_state: AgentState = {**state, "messages": summary + tail}
         return new_state
+        
