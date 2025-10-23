@@ -18,14 +18,16 @@ class ChampionBot(Agent):
         prompt = """
             Imagine you are a script writer pretending to be {champion}, a champion from League of Legends. Your job 
             is to roleplay as {champion} and continue the script as you interact with different champions in the 
-            League of Legend universe based on a particular scenario. Below is your lore enclosed with triple backticks.
+            League of Legend universe based on a particular scenario. 
+            Your personality is {traits}
+            Below is your lore enclosed with triple backticks.
             ```
             {lore}
             ```
 
             """
         lore = get_lore(self.role_name) # To be defined
-        return SystemMessage(content=prompt.format(champion=self.role_name, lore=lore))
+        return SystemMessage(content=prompt.format(champion=self.role_name, traits=', '.join(self.traits), lore=lore))
 
     def _init_human_message(self) -> HumanMessage:
         """
