@@ -1,11 +1,9 @@
 from typing import Optional, Set, List
 
-from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 
 from .agent import Agent, AgentState
 from .constants import Role
-# from .prompts import CHAMPION_SYSTEM_PROMPT, CHAMPION_REPLY_PROMPT
-
 
 class ChampionBot(Agent):
     def __init__(self, role_name: Role, traits: Optional[Set[str]] = None):
@@ -24,6 +22,7 @@ class ChampionBot(Agent):
             ```
             {lore}
             ```
+
             """
         lore = get_lore(self.role_name) # To be defined
         return SystemMessage(content=prompt.format(champion=self.role_name, lore=lore))
@@ -50,9 +49,6 @@ class ChampionBot(Agent):
         """
         # Reuse the base Agent call, to be deleted if no additional change is required.
         return super().__call__(state)
-
-
-
 
 
 class RoleAssignerBot(Agent):
@@ -112,8 +108,9 @@ class RoleAssignerBot(Agent):
 
 
 class EventCreatorBot(Agent):
-    def __init__(self, role_name: Role, champion_dict: List[str] = None):
+    def __init__(self, role_name: Role, champion_dict: List[str], scenario: str):
         self.champion_dict = champion_dict
+        self.scenario = scenario
         super().__init__(role_name)
 
     def _init_system_message(self) -> SystemMessage:
@@ -153,8 +150,9 @@ class EventCreatorBot(Agent):
         Given the scenario below, use it as a basis to create the list of events. If the scenario is incomplete or missing, complete it with creativity.
 
         Scenario: 
+        {scenario}
         """
-        return HumanMessage(content=prompt.format(champion=self.role_name))
+        return HumanMessage(content=prompt.format(champion=self.role_name, scenario=self.scenario))
 
 
     def __call__(self, state: AgentState) -> AgentState:
@@ -163,3 +161,120 @@ class EventCreatorBot(Agent):
         """
         # Reuse the base Agent call, to be deleted if no additional change is required.
         return super().__call__(state, add_to_state=False)
+
+
+class NovelWriterBot(Agent):
+    def __init__(self, role_name: Role, min_words: int, max_words: int):
+        self.min_words = min_words
+        self.max_words = max_words
+        super().__init__(role_name)
+
+    def _init_system_message(self) -> SystemMessage:
+        # Possible improvement is to include writer type. e.g. Copy the style of a particular writer
+        """
+        Returns the system prompt defining ...
+        """
+        prompt = """
+            Imagine you are a novelist and literary editor working to transform a screenplay-like script into a polished, immersive novel.
+            The script is provided in the form of AI message outputs, representing snippets of dialogue, narration, stage directions, and current event.
+
+            Your job is to weave these fragmented AI message outputs into a cohesive and compelling novel chapter that reads naturally, with strong prose, pacing, and emotional resonance.
+
+            Rules:
+            - Treat the AI message outputs as your source script — they contain the intended content, tone, and structure.
+            - Expand, merge, and refine the messages into complete paragraphs of novel-quality writing.
+            - Preserve all core events, emotions, and dialogues, but rewrite them in elegant literary prose.
+            - Use vivid descriptions, natural dialogue, and smooth transitions between scenes.
+            - Maintain consistent point of view, tense, and narrative voice throughout.
+            - Create a clear beginning → buildup → climax → resolution flow.
+            - If context is missing between messages, infer or creatively bridge scenes while staying consistent with prior tone and logic.
+            - Do not include message tags like "AI:" or "Human:".
+            - Output only the final novel text, formatted in full paragraphs — no bullet points, lists, or event markers.
+            - Never output nothing. If unsure, write a plausible and coherent continuation that feels authentic to the story.
+            """
+        return SystemMessage(content=prompt)
+
+    def _init_human_message(self) -> HumanMessage:
+        """
+        Returns the human message ...
+        """
+        prompt = """
+            Given the script above, output a novel in about {min_words} to {max_words} words
+        """
+        return HumanMessage(content=prompt.format(min_words=self.min_words, max_words=self.max_words))
+
+    def __call__(self, state: AgentState) -> AgentState:
+        """
+        Invoke call from base agent class
+        """
+        # Reuse the base Agent call, to be deleted if no additional change is required.
+        return super().__call__(state, add_to_state=False)
+
+
+
+
+class SummarizerBot(Agent):
+    """
+    Summarizes earlier conversation and rewrites state['messages'] as:
+      [System(running memory)] + last_k_messages
+
+    Notes:
+    - Uses the currently active model registered on this Agent (via register_model / set_active_model).
+    - Does NOT append its own AI message to the transcript; instead it compresses and replaces history.
+    """
+
+    def __init__(
+        self,
+        role_name: Role,
+        k_keep: int = 8,
+    ):
+        self.k_keep = max(0, int(k_keep))
+        super().__init__(role_name)
+
+    def _init_system_message(self) -> SystemMessage:
+        """
+        Returns the system prompt defining the memory compression task.
+        """
+        prompt = """
+        You are a memory compressor for a multi-character roleplay. Produce a concise running memory preserving: (1) key plot facts, (2) each speaker's intentions, (3) unresolved threads, and (4) world-state changes and commitments. Keep names consistent. Do not invent new facts. Aim ~120–200 words.
+        """
+        return SystemMessage(content=prompt)
+
+
+    def __call__(self, state: AgentState) -> AgentState:
+        """
+        Compress older history into a single SystemMessage + keep last k messages.
+        Rewrites state['messages'] and returns updated state.
+        """
+        messages: List[BaseMessage] = state.get("messages", [])  
+        if not messages or len(messages) <= self.k_keep:
+            # Nothing to compress; pass through unchanged
+            return super().__call__(state, add_to_state=False)
+
+        head = messages[:-self.k_keep]
+        tail = messages[-self.k_keep:]
+
+        # Get active LLM from the Agent's registry
+        if self._active_model_key is None:
+            raise RuntimeError("SummarizerBot: no active model set. Call register_model() and set_active_model().")
+        llm = self._models[self._active_model_key].get_llm()  
+
+
+        sys_msg = self._init_system_message()
+        user_msg = HumanMessage(content=(
+            """
+            Summarize the EARLIER conversation below for carry-over memory. 
+            Focus on durable facts, goals/plans, conflicts, constraints, and style cues.
+            === BEGIN EARLIER MESSAGES ===
+            {head}
+            === END EARLIER MESSAGES ===
+            Output format:
+            1) Short paragraph summary (3–6 sentences).
+            2) Bulleted 'open threads' checklist, if any (<=5 bullets).
+            """
+        ))
+
+        summary = llm.invoke([sys_msg, user_msg])
+
+        new_state: AgentState = {**state, "messages": summary + tail}
+        return new_state
