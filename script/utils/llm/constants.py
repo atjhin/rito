@@ -12,7 +12,7 @@ class Role(Enum):
         return obj
 
 roles = {}
-with open("llm/champions.txt") as f:
+with open("utils/champions.txt") as f:
     for line in f:
         line = line.strip()
         if not line:

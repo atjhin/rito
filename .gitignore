@@ -1,2 +1,5 @@
 .env
 venv/
+*/__pycache__/*
+lol-story-teller.pem
+*.DS_Store

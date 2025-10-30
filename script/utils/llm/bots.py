@@ -39,7 +39,7 @@ class ChampionBot(Agent):
         or event trigger for the champion.
         """
         prompt = """
-        Continue the following script by answering the dialogue and/or acting. FOLLOW THE RULES BELOW
+        Continue the following script by answering the dialogue and/or acting in about 5 to 75 words. FOLLOW THE RULES BELOW
             - Always prefix your response with {champion}: <answer>. 
             - Never remain silent.
             - All act should be enclosed with brackets.
