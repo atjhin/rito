@@ -3,3 +3,11 @@ venv/
 */__pycache__/*
 lol-story-teller.pem
 *.DS_Store
+.idea/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+instance/
