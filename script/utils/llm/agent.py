@@ -22,8 +22,9 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage
 from langchain_core.tools import BaseTool
 from abc import ABC, abstractmethod
+from collections import deque
 
-from .constants import Role, ModelChoices
+from .constants import Role, ModelChoices, ModelConfig
 
 class AgentState(TypedDict, total=False):
     """Runtime state passed between graph nodes."""
@@ -32,55 +33,9 @@ class AgentState(TypedDict, total=False):
     # human_message: Dict[Role, HumanMessage]
     # lore: Dict[Role, str]            # optional lore per role (not used directly here)
     model: ModelChoices              # optional: requested model for this turn
-
-
-class ModelConfig:
-    """
-    Configuration wrapper for initializing and caching chat models.
-
-    Parameters
-    ----------
-    model : ModelChoices
-        Model identifier (e.g., "gpt-4o", "claude-3-opus").
-    provider : str
-        Provider name ("openai", "anthropic", etc.).
-    api_key : Optional[str]
-        API key for the provider.
-    temperature : float, default=0.7
-        Sampling temperature for the model.
-    kwargs : Optional[Dict[str, Any]]
-        Additional keyword arguments passed to the model initializer.
-    """
-
-    def __init__(
-        self,
-        *,
-        model: ModelChoices,
-        provider: str,
-        api_key: Optional[str] = None,
-        temperature: float = 0.7,
-        kwargs: Optional[Dict[str, Any]] = None,
-    ):
-        self.model = model.value
-        self.provider = provider
-        self.api_key = api_key
-        self.temperature = temperature
-        self.kwargs = kwargs or {}
-        self._llm = None
-
-    def get_llm(self):
-        """
-        Lazily initializes and returns the chat model instance.
-        """
-        if self._llm is None:
-            self._llm = init_chat_model(
-                model=self.model,
-                model_provider=self.provider,
-                api_key=self.api_key,
-                temperature=self.temperature,
-                **self.kwargs,
-            )
-        return self._llm
+    next_bot: List[str]
+    event_list: List[str]
+    ai_response: str
 
 
 class Agent(ABC):
@@ -127,19 +82,19 @@ class Agent(ABC):
     def _init_human_message(self):
         pass
 
-    def register_model(self, key: ModelChoices, cfg: ModelConfig):
+    def register_model(self, key: str, cfg: ModelConfig):
         """
         Register a model configuration under a key.
         """
-        self._models[key.value] = cfg
+        self._models[key] = cfg
 
-    def set_active_model(self, key: ModelChoices):
+    def set_active_model(self, key: str):
         """
         Set the currently active model.
         """
-        if key.value not in self._models:
+        if key not in self._models:
             raise KeyError(f"Unknown model key: {key}")
-        self._active_model_key = key.value
+        self._active_model_key = key
 
     def add_tools(self, tools: List[BaseTool]):
         """
@@ -167,6 +122,9 @@ class Agent(ABC):
         messages_for_ai = [self._system_message] + state["messages"] + [self._human_message]
         
         ai = llm.invoke(messages_for_ai)
+        # if add_to_state: state['messages'].append(ai)  
+        # state['ai_response'] = [ai]
+        # return state
         updated_message = state["messages"] + [ai] if add_to_state else state["messages"]
         return {"messages": updated_message, "ai_response": ai}
         # return {"messages": state["messages"] + [ai]} if add_to_state else {"messages": state["messages"]}

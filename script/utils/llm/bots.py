@@ -1,6 +1,7 @@
 from typing import Optional, Set, List
 
-from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
+from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage, AIMessage
+from collections import deque
 
 from .agent import Agent, AgentState
 from .constants import Role
@@ -39,7 +40,7 @@ class ChampionBot(Agent):
         or event trigger for the champion.
         """
         prompt = """
-        Continue the following script by answering the dialogue and/or acting in about 5 to 75 words. FOLLOW THE RULES BELOW
+        Continue the following script by answering the dialogue and/or acting in 5 to 50 words. FOLLOW THE RULES BELOW
             - Always prefix your response with {champion}: <answer>. 
             - Never remain silent.
             - All act should be enclosed with brackets.
@@ -54,7 +55,10 @@ class ChampionBot(Agent):
         Invoke call from base agent class 
         """
         # Reuse the base Agent call, to be deleted if no additional change is required.
-        return super().__call__(state)
+
+        output =  super().__call__(state)
+        print(output['ai_response'].content)
+        return output
 
 
 class RoleAssignerBot(Agent):
@@ -79,6 +83,8 @@ class RoleAssignerBot(Agent):
             - If the conversation stalls, output `Event` to signal the next event.  
             - Always encourage natural turn-taking between champions.  
             - Never output dialogue, only the next speaker or `Event`.  
+            - If the latest message is an event, DO NOT output `Event`.
+            - If the latest 4 message is not an event, output an `Event`.
             
             ### Example
             Script:
@@ -96,8 +102,10 @@ class RoleAssignerBot(Agent):
         """
         prompt = """
         Based on the script above, determine which champion should go next or event.
+        - Only output one of {champion_name}, Event.
+        - Do not include any semicolons or colons
         """
-        return HumanMessage(content=prompt)
+        return HumanMessage(content=prompt.format(champion_name=', '.join(self.champions_ls)))
 
 
     def __call__(self, state: AgentState) -> AgentState:
@@ -105,7 +113,12 @@ class RoleAssignerBot(Agent):
         Invoke call from base agent class
         """
         # Reuse the base Agent call, to be deleted if no additional change is required.
-        return super().__call__(state, add_to_state=False)
+        print(state)
+        next_bot = super().__call__(state, add_to_state=False)['ai_response'].content
+        print("\n\n\n")
+        print(next_bot)
+        state['next_bot'].append(next_bot)
+        return state
 
 
 class EventCreatorBot(Agent):
@@ -141,14 +154,14 @@ class EventCreatorBot(Agent):
             Event 1: A sudden storm forces the group into an uneasy alliance.  
             Event 2: Zed suggests a dangerous shortcut, testing Shen's cautious nature.  
             """
-        return SystemMessage(content=prompt.format(champion_desc="\n".join(f"{c['champion_name']}: {c['personality']}," for c in self.champion_dict)))
+        return SystemMessage(content=prompt.format(champion_desc="\n".join(f"{c['name']}: {c['personality']}," for c in self.champion_dict)))
 
     def _init_human_message(self) -> HumanMessage:
         """
         Returns the human message ...
         """
         prompt = """
-        Given the scenario below, use it as a basis to create the list of events. If the scenario is incomplete or missing, complete it with creativity.
+        Given the scenario below, use it as a basis to create the list of 4 events. If the scenario is incomplete or missing, complete it with creativity.
 
         Scenario: 
         {scenario}
@@ -160,8 +173,14 @@ class EventCreatorBot(Agent):
         """
         Invoke call from base agent class
         """
+        print(state)
         # Reuse the base Agent call, to be deleted if no additional change is required.
-        return super().__call__(state, add_to_state=False)
+        output = super().__call__(state, add_to_state=False)
+        event_list = deque(output['ai_response'].content.split('\n'))
+        next_event = event_list.popleft()
+        output['event_list'] = event_list
+        output['messages'].append(AIMessage(content=f"Event: {next_event}"))
+        return output
 
 
 class NovelWriterBot(Agent):
@@ -212,8 +231,6 @@ class NovelWriterBot(Agent):
         return super().__call__(state, add_to_state=False)
 
 
-
-
 class SummarizerBot(Agent):
     """
     Summarizes earlier conversation and rewrites state['messages'] as:
@@ -258,6 +275,7 @@ class SummarizerBot(Agent):
         Compress older history into a single SystemMessage + keep last k messages.
         Rewrites state['messages'] and returns updated state.
         """
+        print("\n Summarizer called \n")
         messages: List[BaseMessage] = state.get("messages", [])  
         if not messages or len(messages) <= self.k_keep:
             # Nothing to compress; pass through unchanged
