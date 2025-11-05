@@ -47,7 +47,7 @@ class Logger:
         
         final_columns = [
             'model',
-            'role_name',
+            'role',
             'system_message',
             'human_message',
             'input_message',
