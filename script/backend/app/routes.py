@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, jsonify, request
-from .database.supabase_calls import insert_character
+from app.utils.utils.logger import Logger
+from app.utils.core.story_teller import StoryTeller
 # Create a Blueprint named 'main'
 bp = Blueprint('main', __name__)
 
@@ -7,11 +8,52 @@ bp = Blueprint('main', __name__)
 def index():
     return render_template('index.html')
 
-@bp.route('/api/story', methods=['POST'])
-def get_story_details():
-    try:
-        data = request.get_json()
-        result = insert_character(data)
-        return jsonify(result), 201
-    except ValueError as ve:
-        return jsonify({"error": str(ve)}), 400
+# @bp.route('/submit-data', methods=['POST'])
+# def receive_data():
+
+#     if not request.json:
+#         return jsonify({"success": False, "message": "Missing JSON data"}), 400
+
+#     data = request.json
+
+#     print("\n--- RECEIVED PAYLOAD FROM CLIENT ---")
+#     print(data) 
+#     logger = Logger()
+#     story_teller = StoryTeller(
+#         scenario=data.get("story", ""),
+#         champions_json=data.get("champions", []),
+#         logger=logger
+#     )
+#     assert story_teller is not None
+#     print("------------------------------------\n")
+#     # flush the log file to S3
+
+#     return jsonify({"success": True, "message": "Payload received by server"}), 200
+
+
+@bp.route('/submit-data', methods=['POST'])
+def receive_data_test():
+    from app.utils.core.story_teller import StoryTeller
+    from app.utils.utils.logger import Logger
+
+    scenario = "Twisted Fate and Zed are computer science students. They are arguing about their group project."
+    json_input = [
+        {"name": "Zed", "personality": "Happy", "models": "gemini_2_5_flash_lite"},
+        {
+            "name": "TwistedFate",
+            "personality": "Sad",
+            "models": "gemini_2_5_flash_lite",
+        },
+    ]
+
+    logger = Logger()
+    story_teller = StoryTeller(
+        scenario=scenario,
+        champions_json=json_input,
+        logger=logger
+    )   
+
+    assert story_teller is not None
+    story_teller.build_graph()
+    print(story_teller.invoke())    
+    return jsonify({"success": True, "message": "Payload received by server"}), 200

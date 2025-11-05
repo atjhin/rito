@@ -3,16 +3,13 @@ from dotenv import load_dotenv
 import os
 
 
-from .database.supabase_calls import get_characters
+from .database.fetch_from_s3 import get_champs_and_models_txt
 
 def create_app():
-    basedir = os.path.dirname(os.path.abspath(__file__))
-    env_path = os.path.join(basedir, '..', '.env')
-    load_dotenv(env_path)
+    
+    get_champs_and_models_txt(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'))
 
     app = Flask(__name__)
-
-    get_characters()
 
     from .routes import bp
     app.register_blueprint(bp)

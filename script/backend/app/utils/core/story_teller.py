@@ -1,0 +1,136 @@
+from app.utils.core.agent_factory import AgentFactory
+from app.utils.data_models.agent_creation_item import (
+    ChampionAgentConfig,
+    EventCreatorAgentConfig,
+    NovelWriterAgentConfig,
+    RoleAssignerAgentConfig,
+    SummarizerAgentConfig,
+)
+from langgraph.graph import StateGraph, END
+from app.utils.constants.roles import Role
+from app.utils.constants.constants import ModelChoices
+from app.utils.data_models.agent_state import AgentState
+from langchain_core.messages import AIMessage
+
+
+class StoryTeller:
+    def __init__(self, scenario, champions_json, logger):
+        self.graph = StateGraph(AgentState)
+        self.scenario = scenario
+        self.champions_json = champions_json
+        self.logger = logger
+        self.agent_factory = AgentFactory(self.logger)
+        self._preprocess_input()
+        self.app = None
+
+    def _preprocess_input(self):
+        self.champion_agents = {}
+        for champ in self.champions_json:
+            champ_name = champ["name"]
+            champ_traits = set(champ["personality"])
+            champ_model = ModelChoices[champ["models"]].value
+            champ_agent_config = ChampionAgentConfig(
+                role=Role[champ_name], model=champ_model, traits=champ_traits
+            )
+            self.champion_agents[champ_name] = self.agent_factory.create_champion_agent(
+                champ_agent_config
+            )
+            self.graph.add_node(champ_name, self.champion_agents[champ_name])
+
+    def build_graph(self):
+        event_bot = self.agent_factory.create_event_creator_agent(
+            EventCreatorAgentConfig(
+                role=Role.Event,
+                model=ModelChoices.event.value,
+                input_json=self.champions_json,
+                scenario=self.scenario,
+            )
+        )
+        print("[StoryTeller] Champion Agents:", self.champion_agents.keys())
+        role_bot = self.agent_factory.create_role_assigner_agent(
+            RoleAssignerAgentConfig(
+                role=Role.RoleAssigner,
+                model=ModelChoices.role.value,
+                champions_list=list(self.champion_agents.keys()),
+            )
+        )
+        summarizer_bot = self.agent_factory.create_summarizer_agent(
+            SummarizerAgentConfig(
+                role=Role.Summarizer, model=ModelChoices.summarizer.value
+            )
+        )
+        novel_bot = self.agent_factory.create_summarizer_agent(
+            NovelWriterAgentConfig(
+                role=Role.Novel,
+                model=ModelChoices.novel.value,
+                min_words=200,
+                max_words=500,
+            )
+        )
+
+        self.graph.add_node("RoleAssignerBot", role_bot)
+        self.graph.add_node("EventCreatorBot", event_bot)
+        self.graph.add_node("NovelWriterBot", novel_bot)
+        self.graph.add_node("SummarizerBot", summarizer_bot)
+
+        self.graph.set_entry_point("EventCreatorBot")
+        self.graph.add_edge("EventCreatorBot", "RoleAssignerBot")
+
+        self.graph.add_conditional_edges(
+            "RoleAssignerBot",
+            role_assigner_node,
+            list(self.champion_agents.keys()) + ["NovelWriterBot", "RoleAssignerBot"],
+        )
+        for champ in self.champion_agents.keys():
+            self.graph.add_edge(champ, "SummarizerBot")
+            self.graph.add_edge("SummarizerBot", "RoleAssignerBot")
+        self.graph.add_edge("NovelWriterBot", END)
+        self.app = self.graph.compile()
+        with open("graph.png", "wb") as f:
+            f.write(self.app.get_graph().draw_mermaid_png())
+
+    def invoke(self):
+        self.app.invoke(
+            AgentState(
+                messages=[], model=None, next_bot=[], event_list=[], ai_response=""
+            ),
+            {"recursion_limit": 100},
+        )
+        self.logger.save_logs_to_file()
+        self.logger.clear_logs()
+
+
+def role_assigner_node(state):
+    if len(state["next_bot"]) > 0:
+        next_bot = state["next_bot"][-1]
+        if (next_bot == "Event") and (len(state["event_list"]) == 0):
+            return "NovelWriterBot"
+        elif next_bot == "Event":
+            next_event = state["event_list"].popleft()
+            state["messages"].append(AIMessage(content=next_event))
+            return "RoleAssignerBot"
+        else:
+            return next_bot
+    else:
+        raise Exception("Something wrong lol")
+
+
+if __name__ == "__main__":
+    from ..utils.logger import Logger
+
+    scenario = "Twisted Fate and Zed are computer science students. They are arguing about their group project."
+    json_input = [
+        {"name": "Zed", "personality": "Happy", "models": "gemini_2_5_flash_lite"},
+        {
+            "name": "TwistedFate",
+            "personality": "Sad",
+            "models": "gemini_2_5_flash_lite",
+        },
+    ]
+    logger = Logger()
+    story_teller = StoryTeller(
+        scenario=scenario, champions_json=json_input, logger=logger
+    )
+    assert story_teller is not None
+    story_teller.build_graph()
+    print(story_teller.invoke())

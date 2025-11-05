@@ -57,7 +57,7 @@ class ChampionBot(Agent):
         # Reuse the base Agent call, to be deleted if no additional change is required.
 
         output =  super().__call__(state)
-        print(output['ai_response'].content)
+        # print(output['ai_response'].content)
         return output
 
 
@@ -113,10 +113,10 @@ class RoleAssignerBot(Agent):
         Invoke call from base agent class
         """
         # Reuse the base Agent call, to be deleted if no additional change is required.
-        print(state)
+        # print(state)
         next_bot = super().__call__(state, add_to_state=False)['ai_response'].content
-        print("\n\n\n")
-        print(next_bot)
+        # print("\n\n\n")
+        # print(next_bot)
         state['next_bot'].append(next_bot)
         return state
 
@@ -173,7 +173,7 @@ class EventCreatorBot(Agent):
         """
         Invoke call from base agent class
         """
-        print(state)
+        # print(state)
         # Reuse the base Agent call, to be deleted if no additional change is required.
         output = super().__call__(state, add_to_state=False)
         event_list = deque(output['ai_response'].content.split('\n'))
@@ -275,7 +275,7 @@ class SummarizerBot(Agent):
         Compress older history into a single SystemMessage + keep last k messages.
         Rewrites state['messages'] and returns updated state.
         """
-        print("\n Summarizer called \n")
+        # print("\n Summarizer called \n")
         messages: List[BaseMessage] = state.get("messages", [])  
         if not messages or len(messages) <= self.k_keep:
             # Nothing to compress; pass through unchanged
