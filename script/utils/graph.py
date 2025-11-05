@@ -4,7 +4,7 @@ from typing import List
 # from IPython.display import Image, display
 from langchain_core.messages import AIMessage
 
-from .llm import *
+from llm import *
 
 
 class StoryTeller:
