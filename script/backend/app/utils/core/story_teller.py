@@ -12,6 +12,9 @@ from app.utils.constants.constants import ModelChoices
 from app.utils.data_models.agent_state import AgentState
 from langchain_core.messages import AIMessage
 from app.utils.data_models.story_teller_item import StoryTellerItem
+from langgraph.checkpoint.sqlite import SqliteSaver
+import sqlite3
+
 
 class StoryTeller:
     def __init__(self, scenario, champions_json, logger):
@@ -67,7 +70,7 @@ class StoryTeller:
                 role=Role.Summarizer, model=ModelChoices.summarizer.value
             )
         )
-        novel_bot = self.agent_factory.create_summarizer_agent(
+        novel_bot = self.agent_factory.create_novel_writer_agent(
             NovelWriterAgentConfig(
                 role=Role.Novel,
                 model=ModelChoices.novel.value,
@@ -94,21 +97,34 @@ class StoryTeller:
             self.graph.add_edge("SummarizerBot", "RoleAssignerBot")
         self.graph.add_edge("NovelWriterBot", END)
 
-        self.app = self.graph.compile()
+        conn = sqlite3.connect("langgraph_checkpoints.sqlite", check_same_thread=False)
+        memory = SqliteSaver(conn)
+        self.app = self.graph.compile(checkpointer=memory)
 
         with open("graph.png", "wb") as f:
             f.write(self.app.get_graph().draw_mermaid_png())
 
     def invoke(self):
+        thread_id = "session_1"
+        
+        # Create the configurable dictionary with recursion_limit included
+        config = {
+            "configurable": {
+                "thread_id": thread_id
+            },
+            "recursion_limit": 100
+        }
+
         self.app.invoke(
             AgentState(
-                messages=[], model=None, next_bot=[], event_list=[], ai_response=""
+                messages=[], 
+                model=None, 
+                next_bot=[], 
+                event_list=[], 
+                ai_response=""
             ),
-            {"recursion_limit": 100},
+            config  # Pass config as the second argument
         )
-        # self.logger.save_logs_to_file()
-        # self.logger.clear_logs()
-
 
 def role_assigner_node(state):
     if len(state["next_bot"]) > 0:

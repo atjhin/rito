@@ -52,7 +52,8 @@ class EventCreatorAgent(Agent):
         Returns the human message ...
         """
         prompt = """
-        Given the scenario below, use it as a basis to create the list of 1 events. If the scenario is incomplete or missing, complete it with creativity.
+        Given the scenario below, use it as a basis to create the list of 2 events no more than that. 
+        If the scenario is incomplete or missing, complete it with creativity within the 2 events.
 
         Scenario: 
         {scenario}
@@ -68,6 +69,9 @@ class EventCreatorAgent(Agent):
         # print(state)
         # Reuse the base Agent call, to be deleted if no additional change is required.
         output = super().__call__(state, add_to_state=False)
+
+
+
         event_list = deque(output["ai_response"].content.split("\n"))
         next_event = event_list.popleft()
         output["event_list"] = event_list

@@ -3,10 +3,9 @@ from app.utils.constants.constants import Role
 from app.utils.agents.agent import Agent
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.utils.data_models.agent_state import AgentState
-from script.backend.app.utils.constants.champion_lore import (
+from app.utils.constants.champion_lore import (
     get_lore,
-)  # Assume this function retrieves lore for champions
-
+)
 
 class ChampionAgent(Agent):
     def __init__(self, role_name: Role, traits: Optional[Set[str]] = None):
@@ -29,6 +28,7 @@ class ChampionAgent(Agent):
             ```
             """
         lore = get_lore(self.role_name.value)  # To be defined
+        print(f"Fetched lore for {self.role_name.value}: {lore[:60]}...")  # Debug print
         return SystemMessage(
             content=prompt.format(
                 champion=self.role_name.value, traits=", ".join(self.traits), lore=lore
@@ -55,5 +55,4 @@ class ChampionAgent(Agent):
         Invoke call from base agent class
         """
         output = super().__call__(state)
-
         return output

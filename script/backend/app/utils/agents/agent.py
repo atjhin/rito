@@ -96,13 +96,13 @@ class Agent(ABC):
             llm = llm.bind_tools(self._tools)
 
         messages_for_ai = [self._system_message] + state["messages"] + [self._human_message]
-        self._log_llm_input(self._active_model_key, messages_for_ai)    
+        # self._log_llm_input(self._active_model_key, messages_for_ai)    
 
         ai = llm.invoke(messages_for_ai)
 
         self._log_llm_invocation(messages_for_ai, ai)
 
-        self._log_llm_output(ai)
+        # self._log_llm_output(ai)
 
         updated_message = state["messages"] + [ai] if add_to_state else state["messages"]
 

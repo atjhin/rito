@@ -28,7 +28,7 @@ class RoleAssignerAgent(Agent):
             - Always encourage natural turn-taking between champions.  
             - Never output dialogue, only the next speaker or `Event`.  
             - If the latest message is an event, DO NOT output `Event`.
-            - If the latest 4 message is not an event, output an `Event`.
+            - If the latest 4 messages are not events, output an `Event`.
             
             ### Example
             Script:
@@ -50,6 +50,8 @@ class RoleAssignerAgent(Agent):
         Based on the script above, determine which champion should go next or event.
         - Only output one of {champion_name}, Event.
         - Do not include any semicolons or colons
+
+        - If the latest 4 messages are not events, output an `Event`.
         """
         return HumanMessage(
             content=prompt.format(champion_name=", ".join(self.champions_list))

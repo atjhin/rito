@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, jsonify, request
-from script.backend.app.utils.core.logger import Logger
+from app.utils.core.logger import Logger
 from app.utils.core.story_teller import StoryTeller
 from app.utils.data_models.story_teller_item import StoryTellerItem
 # Create a Blueprint named 'main'
@@ -34,8 +34,6 @@ def index():
 
 @bp.route('/submit-data', methods=['POST'])
 def receive_data_test():
-    from app.utils.core.story_teller import StoryTeller
-    from script.backend.app.utils.core.logger import Logger
 
     scenario = "Twisted Fate and Zed are computer science students. They are arguing about their group project."
     json_input = [
