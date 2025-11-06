@@ -97,7 +97,9 @@ class StoryTeller:
             self.graph.add_edge("SummarizerBot", "RoleAssignerBot")
         self.graph.add_edge("NovelWriterBot", END)
 
-        conn = sqlite3.connect("langgraph_checkpoints.sqlite", check_same_thread=False)
+        # folder to store sqlite db
+        db_folder = "logs"
+        conn = sqlite3.connect(f"{db_folder}/langgraph_checkpoints.sqlite", check_same_thread=False)
         memory = SqliteSaver(conn)
         self.app = self.graph.compile(checkpointer=memory)
 
