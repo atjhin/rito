@@ -3,7 +3,7 @@ from app.utils.constants.constants import Role
 from app.utils.agents.agent import Agent
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.utils.data_models.agent_state import AgentState
-from app.utils.utils.champion_lore import (
+from script.backend.app.utils.constants.champion_lore import (
     get_lore,
 )  # Assume this function retrieves lore for champions
 

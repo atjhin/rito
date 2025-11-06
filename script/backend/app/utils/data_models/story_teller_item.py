@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Dict, List
-from app.utils.utils.logger import Logger
+from script.backend.app.utils.core.logger import Logger
 
 @dataclass
 class StoryTellerItem:

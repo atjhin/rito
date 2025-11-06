@@ -126,7 +126,7 @@ def role_assigner_node(state):
 
 
 if __name__ == "__main__":
-    from ..utils.logger import Logger
+    from .logger import Logger
 
     scenario = "Twisted Fate and Zed are computer science students. They are arguing about their group project."
     json_input = [
