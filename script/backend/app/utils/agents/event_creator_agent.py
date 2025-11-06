@@ -52,7 +52,7 @@ class EventCreatorAgent(Agent):
         Returns the human message ...
         """
         prompt = """
-        Given the scenario below, use it as a basis to create the list of 4 events. If the scenario is incomplete or missing, complete it with creativity.
+        Given the scenario below, use it as a basis to create the list of 1 events. If the scenario is incomplete or missing, complete it with creativity.
 
         Scenario: 
         {scenario}

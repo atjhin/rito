@@ -52,4 +52,5 @@ class NovelWriterAgent(Agent):
         Invoke call from base agent class
         """
         # Reuse the base Agent call, to be deleted if no additional change is required.
+        print("\n Novel Writer called \n")
         return super().__call__(state, add_to_state=False)

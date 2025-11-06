@@ -11,7 +11,7 @@ from app.utils.constants.roles import Role
 from app.utils.constants.constants import ModelChoices
 from app.utils.data_models.agent_state import AgentState
 from langchain_core.messages import AIMessage
-
+from app.utils.data_models.story_teller_item import StoryTellerItem
 
 class StoryTeller:
     def __init__(self, scenario, champions_json, logger):
@@ -19,6 +19,15 @@ class StoryTeller:
         self.scenario = scenario
         self.champions_json = champions_json
         self.logger = logger
+        self.agent_factory = AgentFactory(self.logger)
+        self._preprocess_input()
+        self.app = None
+
+    def __init__(self, story_teller_item: StoryTellerItem):
+        self.graph = StateGraph(AgentState)
+        self.scenario = story_teller_item.scenario
+        self.champions_json = story_teller_item.champions
+        self.logger = story_teller_item.logger
         self.agent_factory = AgentFactory(self.logger)
         self._preprocess_input()
         self.app = None
@@ -46,7 +55,6 @@ class StoryTeller:
                 scenario=self.scenario,
             )
         )
-        print("[StoryTeller] Champion Agents:", self.champion_agents.keys())
         role_bot = self.agent_factory.create_role_assigner_agent(
             RoleAssignerAgentConfig(
                 role=Role.RoleAssigner,
@@ -98,8 +106,8 @@ class StoryTeller:
             ),
             {"recursion_limit": 100},
         )
-        self.logger.save_logs_to_file()
-        self.logger.clear_logs()
+        # self.logger.save_logs_to_file()
+        # self.logger.clear_logs()
 
 
 def role_assigner_node(state):
@@ -125,12 +133,12 @@ if __name__ == "__main__":
         {
             "name": "Zed",
             "personality": "Happy",
-            "models": "gemini_2_5_flash_lite"
+            "models": "gemini_2_0_flash_lite"
         },
         {
             "name": "TwistedFate",
             "personality": "Sad",
-            "models": "gemini_2_5_flash_lite"
+            "models": "gemini_2_0_flash_lite"
         },
     ]
     logger = Logger()

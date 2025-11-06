@@ -4,14 +4,22 @@ import pandas as pd
 import json
 import io
 import os
+import boto3
+from dotenv import load_dotenv
+from app.utils.data_models.agent_logger_item import AgentLoggerItem
+
 
 class Logger:
     def __init__(self):
         self.logs = []
         self.client = None # Placeholder for any client you might want to add later
 
-    def log_llm_invocation(self, role_name: str, model_name: str, messages: List[BaseMessage], output_message: BaseMessage):
-        
+    def log_llm_invocation(self, item: AgentLoggerItem):
+        role_name = item.agent_role_name
+        model_name = item.model_name
+        messages = item.messages
+        output_message = item.output_message
+
         log_entry = {
             "role": role_name,
             "model": model_name,
@@ -21,6 +29,7 @@ class Logger:
             "output_message": output_message.content.strip() if output_message.content else "",
         }
         self.logs.append(log_entry)
+        self.save_logs_to_file()
 
     def get_logs(self):
         return self.logs
@@ -45,6 +54,7 @@ class Logger:
             ],
         
         )
+        print ("Formatted log DataFrame:\n", df.head())
         
         final_columns = [
             'model',
@@ -54,7 +64,6 @@ class Logger:
             'input_message',
             'output_message'
         ]
-        
         return df[final_columns]
 
 
@@ -63,8 +72,31 @@ class Logger:
         with open("logs/story_teller.log", 'w') as f:
             json.dump(self.logs, f, indent=4)
 
+        # log_df = self.format_logs_to_dataframe()
+
+        # parquet_buffer = io.BytesIO()
+        # log_df.to_parquet(parquet_buffer, index=False)
+        # parquet_buffer.seek(0)
+
+    def save_logs_to_S3(self):
+
         log_df = self.format_logs_to_dataframe()
 
         parquet_buffer = io.BytesIO()
         log_df.to_parquet(parquet_buffer, index=False)
         parquet_buffer.seek(0)
+
+        basedir = os.path.dirname(os.path.abspath(__file__))
+        env_path = os.path.join(basedir, '.env')
+        load_dotenv(env_path)
+
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv("S3_ACCESS_KEY"),
+            aws_secret_access_key=os.getenv("S3_SECRET_KEY"),
+            region_name=os.getenv("S3_REGION")
+        )
+
+        bucket = os.getenv("S3_BUCKET")
+        dt_now = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        s3.put_object(Bucket=bucket, Key=f"story_teller_logs/story_teller_{dt_now}.parquet", Body=parquet_buffer.getvalue())

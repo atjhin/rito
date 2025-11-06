@@ -48,7 +48,7 @@ class SummarizerAgent(Agent):
         Compress older history into a single SystemMessage + keep last k messages.
         Rewrites state['messages'] and returns updated state.
         """
-        # print("\n Summarizer called \n")
+        print("\n Summarizer called \n")
         messages: List[BaseMessage] = state.get("messages", [])
         if not messages or len(messages) <= self.k_keep:
             # Nothing to compress; pass through unchanged
@@ -64,7 +64,11 @@ class SummarizerAgent(Agent):
             )
         llm = self._models[self._active_model_key].get_llm()
 
-        summary = llm.invoke([self._system_message, *head, self._human_message])
+        messages_for_ai = [self._system_message] + head + [self._human_message] #!
+
+        summary = llm.invoke(messages_for_ai)
+
+        self._log_llm_invocation(messages_for_ai, summary) # !
 
         state["messages"] = [summary] + tail
         return state

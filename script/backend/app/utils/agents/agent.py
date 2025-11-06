@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
 from app.utils.constants.constants import Role, ModelConfig
 from app.utils.data_models.agent_state import AgentState
+from app.utils.data_models.agent_logger_item import AgentLoggerItem
+
 
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from langchain_core.tools import BaseTool
@@ -30,7 +32,7 @@ class Agent(ABC):
         self._tools: List[BaseTool] = []
         self._system_message = self._init_system_message()
         self._human_message = self._init_human_message()
-        self.logger = None  # ! Placeholder for Logger instance
+        self.logger = None
 
         if not isinstance(self._system_message, SystemMessage):
             raise TypeError(
@@ -97,24 +99,27 @@ class Agent(ABC):
         self._log_llm_input(self._active_model_key, messages_for_ai)    
 
         ai = llm.invoke(messages_for_ai)
-        # if add_to_state: state['messages'].append(ai)  
-        # state['ai_response'] = [ai]
-        # return state
+
+        self._log_llm_invocation(messages_for_ai, ai)
 
         self._log_llm_output(ai)
-
-
-        self.logger.log_llm_invocation(
-            role_name=self.role_name.value,
-            model_name=self._active_model_key,
-            messages=messages_for_ai,
-            output_message=ai
-            )
 
         updated_message = state["messages"] + [ai] if add_to_state else state["messages"]
 
         return {"messages": updated_message, "ai_response": ai}
         # return {"messages": state["messages"] + [ai]} if add_to_state else {"messages": state["messages"]}
+
+    def _log_llm_invocation(self, messages_for_ai: List[BaseMessage], ai: BaseMessage):
+        """Logs the LLM invocation details using the Logger instance."""
+        self.logger.log_llm_invocation(
+                AgentLoggerItem(
+                    agent_role_name=self.role_name.value,
+                    model_name=self._active_model_key,
+                    messages=messages_for_ai,
+                    output_message=ai
+                )
+            )
+
 
     # Add this (or similar methods) to your Agent class definition
     def _log_llm_input(self, model_key: str, input_messages: List[BaseMessage]):
