@@ -1,6 +1,6 @@
 import os
 from enum import Enum
-from typing import Dict, List, Optional, Any, TypedDict
+from typing import Dict, Optional, Any
 from dotenv import load_dotenv
 from pathlib import Path
 from langchain.chat_models import init_chat_model
@@ -103,8 +103,8 @@ class ModelChoices(Enum):
     gemini_2_flash_lite = ModelConfig("gemini-2.0-flash-lite", "gemini")
     gemini_2_5_flash_lite = ModelConfig("gemini-2.5-flash-lite", "gemini")
     gemini_2_5_flash = ModelConfig("gemini-2.5-flash", "gemini")
-    summarizer = ModelConfig("gemini-2.0-flash-lite", "gemini")
-    event = ModelConfig("gemini-2.0-flash-lite", "gemini")
-    novel = ModelConfig("gemini-2.0-flash-lite", "gemini")
-    role = ModelConfig("gemini-2.0-flash-lite", "gemini")
+    summarizer = ModelConfig("gemini-2.5-flash-lite", "gemini")
+    event = ModelConfig("gemini-2.5-flash-lite", "gemini")
+    novel = ModelConfig("gemini-2.5-flash-lite", "gemini")
+    role = ModelConfig("gemini-2.5-flash-lite", "gemini")
     # event_creator = ModelConfig("gemini-2.5-flash-lite", "gemini")

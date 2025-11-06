@@ -10,10 +10,6 @@ class StoryTellerItem:
     scenario: str
     champions: List[Dict[str, Any]]
     
-@dataclass
-class AgentConfig:
-    """A configuration object holding parameters needed to create a single agent bot."""
-    
 
 @dataclass
 class AgentCallItem: 

@@ -1,6 +1,6 @@
 from app.utils.data_models.agent_creation_item import (
     ChampionAgentConfig, EventCreatorAgentConfig, NovelWriterAgentConfig, 
-    RoleAssignerAgentConfig, SummarizerAgentConfig, BaseAgentConfig # Assuming a BaseConfig exists
+    RoleAssignerAgentConfig, SummarizerAgentConfig
 )
 from app.utils.agents.agent import Agent
 from app.utils.agents.champion_agent import ChampionAgent
@@ -21,12 +21,10 @@ class AgentFactory:
         1. Model registration and activation.
         2. Logger injection.
         """
-        # 1. Model Configuration
         model_key = config.model.model_name
         agent.register_model(model_key, config.model)
         agent.set_active_model(model_key)
         
-        # 2. Logger Injection
         if self.agent_call_logger:
             agent.logger = self.agent_call_logger
             
@@ -38,7 +36,7 @@ class AgentFactory:
             role_name=config.role,
             traits=config.traits
         )
-        # Use the helper method for common steps
+
         return self._configure_agent(agent, config)
     
     def create_event_creator_agent(self, config: EventCreatorAgentConfig) -> Agent:
@@ -48,7 +46,7 @@ class AgentFactory:
             champion_dict=config.input_json,
             scenario=config.scenario
         )
-        # Use the helper method for common steps
+
         return self._configure_agent(agent, config)
     
     def create_role_assigner_agent(self, config: RoleAssignerAgentConfig) -> Agent:
@@ -57,7 +55,7 @@ class AgentFactory:
             role_name=config.role,
             champions_list=config.champions_list
         )
-        # Use the helper method for common steps
+
         return self._configure_agent(agent, config)
     
     def create_summarizer_agent(self, config: SummarizerAgentConfig) -> Agent:
@@ -65,7 +63,7 @@ class AgentFactory:
         agent = SummarizerAgent(
             role_name=config.role,
         )
-        # Use the helper method for common steps
+
         return self._configure_agent(agent, config)
     
     def create_novel_writer_agent(self, config: NovelWriterAgentConfig) -> Agent:
@@ -75,5 +73,5 @@ class AgentFactory:
             min_words=config.min_words,
             max_words=config.max_words
         )
-        # Use the helper method for common steps
+
         return self._configure_agent(agent, config)

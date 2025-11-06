@@ -85,7 +85,9 @@ class StoryTeller:
             self.graph.add_edge(champ, "SummarizerBot")
             self.graph.add_edge("SummarizerBot", "RoleAssignerBot")
         self.graph.add_edge("NovelWriterBot", END)
+
         self.app = self.graph.compile()
+
         with open("graph.png", "wb") as f:
             f.write(self.app.get_graph().draw_mermaid_png())
 
@@ -112,7 +114,7 @@ def role_assigner_node(state):
         else:
             return next_bot
     else:
-        raise Exception("Something wrong lol")
+        raise Exception("Something wrong")
 
 
 if __name__ == "__main__":
@@ -120,11 +122,15 @@ if __name__ == "__main__":
 
     scenario = "Twisted Fate and Zed are computer science students. They are arguing about their group project."
     json_input = [
-        {"name": "Zed", "personality": "Happy", "models": "gemini_2_5_flash_lite"},
+        {
+            "name": "Zed",
+            "personality": "Happy",
+            "models": "gemini_2_5_flash_lite"
+        },
         {
             "name": "TwistedFate",
             "personality": "Sad",
-            "models": "gemini_2_5_flash_lite",
+            "models": "gemini_2_5_flash_lite"
         },
     ]
     logger = Logger()

@@ -1,8 +1,9 @@
 from langchain_core.messages import BaseMessage
-from typing import List, Dict, Any
+from typing import List
 import pandas as pd
 import json
 import io
+import os
 
 class Logger:
     def __init__(self):
@@ -57,9 +58,8 @@ class Logger:
         return df[final_columns]
 
 
-
-
     def save_logs_to_file(self):
+        os.makedirs("logs", exist_ok=True)
         with open("logs/story_teller.log", 'w') as f:
             json.dump(self.logs, f, indent=4)
 

@@ -60,5 +60,9 @@ class RoleAssignerAgent(Agent):
         Invoke call from base agent class
         """
         next_bot = super().__call__(state, add_to_state=False)["ai_response"].content
+
+        # have to make this more robust in the future
+        next_bot = next_bot.replace(" ", "")
+
         state["next_bot"].append(next_bot)
         return state
