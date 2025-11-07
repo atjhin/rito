@@ -137,7 +137,7 @@ class MultiRoleChat:
         keep_last_k: int = None
     ) -> None:
         
-        load_dotenv(dotenv_path=find_dotenv())
+        load_dotenv()
 
         self.roles: List[str] = roles or []
         self.temperature = temperature

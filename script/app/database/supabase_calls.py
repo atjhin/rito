@@ -3,7 +3,7 @@ import json
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-load_dotenv('.env')
+load_dotenv()
 # Global supabase client, initialized once and used throughout
 supabase: Client = None
 

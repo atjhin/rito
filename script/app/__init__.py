@@ -1,5 +1,4 @@
 from flask import Flask
-from dotenv import load_dotenv
 import os
 from app.database.fetch_from_s3 import get_champs_and_models_txt
 

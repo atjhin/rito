@@ -3,7 +3,7 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 import os
 from dotenv import load_dotenv
 
-load_dotenv(".env")
+load_dotenv()
 
 def get_champs_and_models_txt(save_path: str):
 

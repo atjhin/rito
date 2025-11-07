@@ -7,9 +7,7 @@ def fetch_data_from_s3(character_name, attribute, source="champions_fandom"):
     import os
     from dotenv import load_dotenv
 
-    basedir = os.path.dirname(os.path.abspath(__file__))
-    env_path = os.path.join(basedir, '.env')
-    load_dotenv(env_path)
+    load_dotenv()
 
     bucket = os.getenv("S3_BUCKET")
 

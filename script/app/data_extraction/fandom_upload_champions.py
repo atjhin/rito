@@ -6,7 +6,7 @@ import re
 from datetime import datetime
 from typing import Dict
 
-load_dotenv(".env")
+load_dotenv()
 # === Configuration ===
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME")
 S3_REGION = os.environ.get("S3_REGION")

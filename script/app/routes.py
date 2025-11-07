@@ -5,9 +5,9 @@ from app.utils.data_models.story_teller_item import StoryTellerItem
 # Create a Blueprint named 'main'
 bp = Blueprint('main', __name__)
 
-@bp.route('/')
-def index():
-    return render_template('index.html')
+# @bp.route('/')
+# def index():
+#     return render_template('index.html')
 
 # @bp.route('/submit-data', methods=['POST'])
 # def receive_data():
