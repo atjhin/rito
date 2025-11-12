@@ -5,37 +5,6 @@ from dotenv import load_dotenv
 from pathlib import Path
 from langchain.chat_models import init_chat_model
 
-base_dir = os.path.dirname(__file__)
-champions_path = os.path.join(base_dir, "champions.txt")
-
-class Role(Enum):
-    def __new__(cls, display_name: str, temperature: float):
-        obj = object.__new__(cls)
-        obj._value_ = display_name  
-        obj.temperature = temperature
-        return obj
-
-current_dir = Path(__file__).parent
-file_path = current_dir / "champions.txt"
-
-roles = {}
-with open(file_path) as f:
-    for line in f:
-        line = line.strip()
-        if not line:
-            continue
-        name, temp = line.rsplit(" ", 1)
-        identifier = (
-            name.replace(" ", "")
-                .replace("'", "")
-                .replace(".", "")
-                .replace("&", "And")
-        )
-        roles[identifier] = name
-
-Role = Enum("Role", roles, type=Role)
-
-
 load_dotenv()
 
 DICT_API = {
@@ -103,8 +72,7 @@ class ModelChoices(Enum):
     gemini_2_0_flash_lite = ModelConfig("gemini-2.0-flash-lite", "gemini")
     gemini_2_5_flash_lite = ModelConfig("gemini-2.5-flash-lite", "gemini")
     gemini_2_5_flash = ModelConfig("gemini-2.5-flash", "gemini")
-    summarizer = ModelConfig("gemini-2.5-flash-lite", "gemini")
-    event = ModelConfig("gemini-2.5-flash-lite", "gemini")
-    novel = ModelConfig("gemini-2.5-flash-lite", "gemini")
-    role = ModelConfig("gemini-2.5-flash-lite", "gemini")
-    # event_creator = ModelConfig("gemini-2.5-flash-lite", "gemini")
+    Summarizer = ModelConfig("gemini-2.5-flash", "gemini")
+    Event = ModelConfig("gemini-2.5-flash-lite", "gemini")
+    Novel = ModelConfig("gemini-2.5-flash-lite", "gemini")
+    RoleAssigner = ModelConfig("gemini-2.5-flash-lite", "gemini")

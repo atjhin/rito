@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
-from app.utils.constants.constants import Role, ModelConfig
+from app.utils.constants.models import ModelConfig
+from app.utils.constants.roles import Role
 from app.utils.data_models.agent_state import AgentState
 from app.utils.data_models.agent_logger_item import AgentLoggerItem
 
@@ -121,10 +122,8 @@ class Agent(ABC):
             )
 
 
-    # Add this (or similar methods) to your Agent class definition
     def _log_llm_input(self, model_key: str, input_messages: List[BaseMessage]):
         """Logs the model, prompt, and full context."""
-        # You might want to save this to a file, database, or logging service (e.g., LangSmith)
         print(f"\n--- {self.role_name.value} Input Log ---")
         print(f"Model: {model_key}")
         print(f"Total Messages Sent: {len(input_messages)}")

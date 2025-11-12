@@ -5,7 +5,7 @@ import time
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 import os
-load_dotenv(".env")
+load_dotenv()
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 

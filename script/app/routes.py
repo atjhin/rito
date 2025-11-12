@@ -9,7 +9,6 @@ bp = Blueprint('main', __name__)
 def index():
     return render_template('index.html')
 
-
 @bp.route('/submit-data', methods=['POST'])
 def receive_data_test():
 
@@ -26,6 +25,7 @@ def receive_data_test():
             "models": "gemini_2_5_flash_lite"
         },
     ]
+
     logger = Logger()
     story_teller = StoryTeller(
         StoryTellerItem(

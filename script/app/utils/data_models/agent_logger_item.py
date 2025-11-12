@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from typing import List
 from langchain_core.messages import BaseMessage
 
-
-
 @dataclass
 class AgentLoggerItem: 
     """

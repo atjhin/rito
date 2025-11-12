@@ -1,5 +1,5 @@
 from typing import List
-from app.utils.constants.constants import Role
+from app.utils.constants.roles import Role
 from app.utils.agents.agent import Agent
 from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
 from app.utils.data_models.agent_state import AgentState
@@ -38,7 +38,7 @@ class SummarizerAgent(Agent):
         """
         prompt = """
        Given the earlier conversation above, produce a summary with the following Output format:
-        1) Short paragraph summary (3–6 sentences).
+        1) Short paragraph summary (3-6 sentences).
         2) Bulleted 'open threads' checklist, if any (<=5 bullets).
         """
         return HumanMessage(content=prompt)
@@ -48,11 +48,12 @@ class SummarizerAgent(Agent):
         Compress older history into a single SystemMessage + keep last k messages.
         Rewrites state['messages'] and returns updated state.
         """
-        print("\n Summarizer called \n")
         messages: List[BaseMessage] = state.get("messages", [])
         if not messages or len(messages) <= self.k_keep:
             # Nothing to compress; pass through unchanged
             return state
+
+        print("\n Summarization Happened\n")
 
         head = messages[: -self.k_keep // 2]
         tail = messages[-self.k_keep // 2 :]

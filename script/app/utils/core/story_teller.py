@@ -8,12 +8,13 @@ from app.utils.data_models.agent_creation_item import (
 )
 from langgraph.graph import StateGraph, END
 from app.utils.constants.roles import Role
-from app.utils.constants.constants import ModelChoices
+from app.utils.constants.models import ModelChoices
 from app.utils.data_models.agent_state import AgentState
 from langchain_core.messages import AIMessage
 from app.utils.data_models.story_teller_item import StoryTellerItem
 from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
+import os
 
 
 class StoryTeller:
@@ -25,7 +26,7 @@ class StoryTeller:
         self.agent_factory = AgentFactory(self.logger)
         self._preprocess_input()
         self.app = None
-
+    
     def __init__(self, story_teller_item: StoryTellerItem):
         self.graph = StateGraph(AgentState)
         self.scenario = story_teller_item.scenario
@@ -40,9 +41,11 @@ class StoryTeller:
         for champ in self.champions_json:
             champ_name = champ["name"]
             champ_traits = set(champ["personality"])
-            champ_model = ModelChoices[champ["models"]].value
+            champ_model = ModelChoices[champ["models"]]
             champ_agent_config = ChampionAgentConfig(
-                role=Role[champ_name], model=champ_model, traits=champ_traits
+                role=Role[champ_name], 
+                model=champ_model, 
+                traits=champ_traits
             )
             self.champion_agents[champ_name] = self.agent_factory.create_champion_agent(
                 champ_agent_config
@@ -53,7 +56,7 @@ class StoryTeller:
         event_bot = self.agent_factory.create_event_creator_agent(
             EventCreatorAgentConfig(
                 role=Role.Event,
-                model=ModelChoices.event.value,
+                model=ModelChoices.Event,
                 input_json=self.champions_json,
                 scenario=self.scenario,
             )
@@ -61,19 +64,20 @@ class StoryTeller:
         role_bot = self.agent_factory.create_role_assigner_agent(
             RoleAssignerAgentConfig(
                 role=Role.RoleAssigner,
-                model=ModelChoices.role.value,
+                model=ModelChoices.RoleAssigner,
                 champions_list=list(self.champion_agents.keys()),
             )
         )
         summarizer_bot = self.agent_factory.create_summarizer_agent(
             SummarizerAgentConfig(
-                role=Role.Summarizer, model=ModelChoices.summarizer.value
+                role=Role.Summarizer, 
+                model=ModelChoices.Summarizer
             )
         )
         novel_bot = self.agent_factory.create_novel_writer_agent(
             NovelWriterAgentConfig(
                 role=Role.Novel,
-                model=ModelChoices.novel.value,
+                model=ModelChoices.Novel,
                 min_words=200,
                 max_words=500,
             )
@@ -98,7 +102,8 @@ class StoryTeller:
         self.graph.add_edge("NovelWriterBot", END)
 
         # folder to store sqlite db
-        db_folder = "logs"
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        db_folder = os.path.abspath(os.path.join(base_dir, "..", "..", "..", "logs"))
         conn = sqlite3.connect(f"{db_folder}/langgraph_checkpoints.sqlite", check_same_thread=False)
         memory = SqliteSaver(conn)
         self.app = self.graph.compile(checkpointer=memory)

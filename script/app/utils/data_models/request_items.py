@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 from langchain_core.messages import BaseMessage
-from script.backend.app.utils.core.logger import Logger
-
+from test.backend.app.utils.core.logger import Logger
 
 @dataclass
 class AgentCallItem: 

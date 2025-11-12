@@ -68,8 +68,9 @@ class Logger:
 
 
     def save_logs_to_file(self):
-        os.makedirs("logs", exist_ok=True)
-        with open("logs/story_teller.log", 'w') as f:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        log_folder = os.path.abspath(os.path.join(base_dir, "..", "..", "..", "logs"))
+        with open(f"{log_folder}/story_teller.log", 'w') as f:
             json.dump(self.logs, f, indent=4)
 
         # log_df = self.format_logs_to_dataframe()

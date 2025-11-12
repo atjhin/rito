@@ -21,8 +21,8 @@ class AgentFactory:
         1. Model registration and activation.
         2. Logger injection.
         """
-        model_key = config.model.model_name
-        agent.register_model(model_key, config.model)
+        model_key = config.model.value.model_name
+        agent.register_model(model_key, config.model.value)
         agent.set_active_model(model_key)
         
         if self.agent_call_logger:

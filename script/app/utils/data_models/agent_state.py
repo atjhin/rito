@@ -1,7 +1,6 @@
 from typing import List, TypedDict
 from langchain_core.messages import BaseMessage
-from app.utils.constants.constants import ModelChoices
-
+from app.utils.constants.models import ModelChoices
 
 class AgentState(TypedDict, total=False):
     """Runtime state passed between graph nodes."""

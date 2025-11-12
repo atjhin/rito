@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from typing import List, Set, Any
 from app.utils.constants.roles import Role
 from enum import Enum
-from app.utils.constants.constants import ModelConfig
-
+from app.utils.constants.models import ModelConfig
 
 @dataclass
 class BaseAgentConfig:

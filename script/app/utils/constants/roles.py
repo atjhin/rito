@@ -28,3 +28,6 @@ with open(file_path) as f:
         roles[identifier] = name
 
 Role = Enum("Role", roles, type=Role)
+
+if __name__ == "__main__":
+    print(Role.Summarizer.value)
