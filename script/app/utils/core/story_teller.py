@@ -45,7 +45,8 @@ class StoryTeller:
             champ_agent_config = ChampionAgentConfig(
                 role=Role[champ_name], 
                 model=champ_model, 
-                traits=champ_traits
+                traits=champ_traits,
+                story_context=self.scenario  # Pass scenario for lore summarization
             )
             self.champion_agents[champ_name] = self.agent_factory.create_champion_agent(
                 champ_agent_config

@@ -32,9 +32,13 @@ class AgentFactory:
 
     def create_champion_agent(self, config: ChampionAgentConfig) -> Agent:
         """Creates a ChampionAgent and applies common setup."""
+        # Get story_context from config if available
+        story_context = getattr(config, 'story_context', None)
+        
         agent = ChampionAgent(
             role_name=config.role,
-            traits=config.traits
+            traits=config.traits,
+            story_context=story_context
         )
 
         return self._configure_agent(agent, config)

@@ -8,8 +8,9 @@ from app.utils.constants.champion_lore import (
 )
 
 class ChampionAgent(Agent):
-    def __init__(self, role_name: Role, traits: Optional[Set[str]] = None):
+    def __init__(self, role_name: Role, traits: Optional[Set[str]] = None, story_context: str = None):
         self.traits = traits if traits is not None else set()
+        self.story_context = story_context
         super().__init__(role_name)
 
     def _init_system_message(self) -> SystemMessage:
@@ -31,8 +32,13 @@ class ChampionAgent(Agent):
         1. Check the past conversations.
         2. Roleplay as {champion}, draft what you will say to continue the story. Make sure it fits the {champion} with personality and lore provided, and it is certain to progress the story.
         """
-        lore = get_lore(self.role_name.value)  # To be defined
-        print(f"Fetched lore for {self.role_name.value}: {lore[:60]}...")  # Debug print
+        lore = get_lore(self.role_name.value, story_context=self.story_context)
+        # Debug print - show full summarized lore for testing
+        print(f"\n{'='*80}")
+        print(f"Champion: {self.role_name.value}")
+        print(f"Story Context: {self.story_context}")
+        print(f"Summarized Lore:\n{lore}")
+        print(f"{'='*80}\n")
         return SystemMessage(
             content=prompt.format(
                 champion=self.role_name.value, traits=", ".join(self.traits), lore=lore

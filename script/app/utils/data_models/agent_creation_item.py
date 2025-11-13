@@ -17,6 +17,7 @@ class ChampionAgentConfig(BaseAgentConfig):
     """Parameters required only by ChampionAgent."""
 
     traits: Set[str]
+    story_context: str = None  # Optional story context for lore summarization
 
 
 @dataclass
