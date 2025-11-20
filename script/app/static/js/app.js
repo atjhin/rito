@@ -1,5 +1,5 @@
 // Global state and helper functions
-const state = { champions: [], models: [], counter: 0, MAX: 4, MIN: 2 };
+const state = { champions: [], models: [], counter: 0, MAX: 4, MIN: 2, retryCount: 0 };
 const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }[c]));
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -506,28 +506,69 @@ function enableHorizontalWheelScroll(el) {
         }
 
         const payload = buildPayload();
+        payload.retry_count = state.retryCount;  // Include retry count
         
         console.log('--- FORM SUBMITTED ---');
         console.log(JSON.stringify(payload, null, 2));
 
-        // 2. Send the payload to the Flask backend
-        fetch('/submit-data', { // <-- Define a URL endpoint
+        const submitBtn = $('#submitBtn');
+        const feedbackDiv = $('#validationFeedback');
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        // Send the payload to the Flask backend
+        fetch('/submit-data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(payload)
         })
-        .then(response => {
-            if (response.ok) {
-                toast('✅ Configuration sent to server!');
+        .then(response => response.json())
+        .then(data => {
+            console.log('Server response:', data);
+            
+            if (data.needs_retry) {
+                // Story validation failed, show feedback
+                state.retryCount = data.retry_count;
+                
+                feedbackDiv.textContent = `⚠️ ${data.feedback} (Attempt ${data.retry_count}/3)`;
+                feedbackDiv.style.display = 'block';
+                toast(`⚠️ ${data.feedback}`);
+                
+            } else if (data.auto_generated) {
+                // Max retries reached, story was auto-generated
+                state.retryCount = 0;
+                
+                const storyTextarea = $('#story');
+                storyTextarea.value = data.generated_story;
+                
+                feedbackDiv.textContent = `ℹ️ ${data.message} Please review and submit again.`;
+                feedbackDiv.style.display = 'block';
+                feedbackDiv.style.background = '#d1ecf1';
+                feedbackDiv.style.borderColor = '#17a2b8';
+                feedbackDiv.style.color = '#0c5460';
+                toast('ℹ️ Story generated. Please review and submit.');
+                
+            } else if (data.success) {
+                // Story generation started successfully
+                state.retryCount = 0;
+                toast('✅ Story generation started!');
+                feedbackDiv.style.display = 'none';
+                
             } else {
-                toast('❌ Server failed to receive data.');
+                // Other error
+                toast('❌ Server failed to process request.');
             }
         })
         .catch(error => {
             console.error('Network error:', error);
             toast('❌ Network error during submission.');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Configuration';
         });
     });
 

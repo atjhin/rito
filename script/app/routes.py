@@ -156,9 +156,10 @@ def _is_valid_personality(p: str) -> bool:
     return letters >= max(3, len(p2)//2)
 
 
-def _llm_refine_story_if_needed(story: str) -> str:
+def _llm_refine_story_if_needed(story: str) -> dict:
     """
-    If story invalid -> ask Gemini to refine. If valid -> return original unchanged.
+    Validates story and returns dict with validation info.
+    Returns: {"valid": bool, "story": str, "feedback": str}
     """
     prompt = f"""
             You are validating a short scenario written by a user for a roleplay between League of Legends characters.
@@ -176,8 +177,28 @@ def _llm_refine_story_if_needed(story: str) -> str:
 
     resp = _gemini_model.generate_content(prompt)
     refined = (resp.text or "").strip()
-    print(f"Refined story: {refined}")
-    return refined
+    
+    # Normalize for comparison (remove trailing punctuation)
+    original_normalized = story.strip().rstrip('.,!?;:').lower()
+    refined_normalized = refined.rstrip('.,!?;:').lower()
+    
+    # Check if LLM made changes (indicating invalid input)
+    is_valid = (original_normalized == refined_normalized)
+    
+    if is_valid:
+        print(f"Story validation: VALID - '{story}'")
+        return {
+            "valid": True,
+            "story": story,
+            "feedback": ""
+        }
+    else:
+        print(f"Story validation: INVALID - Original: '{story}' -> Refined: '{refined}'")
+        return {
+            "valid": False,
+            "story": refined,
+            "feedback": "Please provide a clear and coherent story outline."
+        }
 
 
 def _llm_infer_personality_if_needed(champ_name: str, personality: str | None) -> str:
@@ -218,6 +239,7 @@ def receive_data():
     data = request.get_json(silent=True) or {}
     story = data.get("story")
     characters = data.get("characters")
+    retry_count = data.get("retry_count", 0)  # Track retry attempts
 
     if not story or not isinstance(characters, list) or not characters:
         return jsonify({
@@ -240,8 +262,31 @@ def receive_data():
             return MODEL_ALIASES[m_lower]
         return "".join(ch if ch.isalnum() else "_" for ch in m_lower)
 
-    # Story: refine ONLY if invalid
-    story_validated = _llm_refine_story_if_needed(story)
+    # Story: validate and check if user input is valid
+    validation_result = _llm_refine_story_if_needed(story)
+    
+    # If invalid and under 3 retries, ask user to retry
+    if not validation_result["valid"] and retry_count < 3:
+        return jsonify({
+            "success": False,
+            "needs_retry": True,
+            "retry_count": retry_count + 1,
+            "feedback": validation_result["feedback"],
+            "message": "Please provide a valid story outline."
+        }), 200
+    
+    # After 3 retries or if valid, proceed with story generation
+    if retry_count >= 3 and not validation_result["valid"]:
+        # Use LLM-generated story after max retries
+        story_validated = validation_result["story"]
+        auto_generated = True
+        story_is_valid = False
+        print(f"Max retries reached. Using LLM-generated story: {story_validated}")
+    else:
+        # Use original valid story
+        story_validated = validation_result["story"]
+        auto_generated = False
+        story_is_valid = validation_result["valid"]
 
     champions = []
     for c in characters:
@@ -274,8 +319,19 @@ def receive_data():
     
     print(f"\n{'='*80}")
     print(f"Story validated: {story_validated}")
+    print(f"Auto-generated: {auto_generated}")
     print(f"Champions: {champions}")
     print(f"{'='*80}\n")
+    
+    # If auto-generated, return the generated story to frontend for review
+    if auto_generated:
+        return jsonify({
+            "success": False,
+            "auto_generated": True,
+            "generated_story": story_validated,
+            "message": "Maximum retry attempts reached. We generated a story for you based on your input.",
+            "champions_used": champions
+        }), 200
     
     logger = Logger()
     story_teller = StoryTeller(
@@ -295,5 +351,6 @@ def receive_data():
         "message": "Payload processed",
         "result": result,
         "scenario_used": story_validated,
-        "champions_used": champions
+        "champions_used": champions,
+        "story_was_valid": story_is_valid
     }), 200
