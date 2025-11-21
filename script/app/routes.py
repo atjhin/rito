@@ -126,7 +126,7 @@ def receive_data():
 
 load_dotenv()  
 
-_GEMINI_MODEL_NAME = "gemini-2.0-flash-lite"  
+_GEMINI_MODEL_NAME = "gemini-2.5-flash-lite"  
 _API_KEY = os.getenv("GOOGLE_API_KEY")
 if not _API_KEY:
     raise RuntimeError("GOOGLE_API_KEY missing in environment")

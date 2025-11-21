@@ -12,22 +12,18 @@ from typing import Any # Use Any for config if BaseAgentConfig isn't defined
 
 
 class AgentFactory:
-    def __init__(self, agent_call_logger=None):
-        self.agent_call_logger = agent_call_logger
+    def __init__(self):
+        pass
 
     def _configure_agent(self, agent: Agent, config: Any) -> Agent:
         """
         Private helper method to handle common agent configuration steps:
         1. Model registration and activation.
-        2. Logger injection.
         """
         model_key = config.model.value.model_name
         agent.register_model(model_key, config.model.value)
         agent.set_active_model(model_key)
         
-        if self.agent_call_logger:
-            agent.logger = self.agent_call_logger
-            
         return agent
 
     def create_champion_agent(self, config: ChampionAgentConfig) -> Agent:

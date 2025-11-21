@@ -9,6 +9,7 @@ from app.utils.data_models.agent_creation_item import (
 from langgraph.graph import StateGraph, END
 from app.utils.constants.roles import Role
 from app.utils.constants.models import ModelChoices
+from app.utils.constants.path_config import Config
 from app.utils.data_models.agent_state import AgentState
 from langchain_core.messages import AIMessage
 from app.utils.data_models.story_teller_item import StoryTellerItem
@@ -23,18 +24,22 @@ class StoryTeller:
         self.scenario = scenario
         self.champions_json = champions_json
         self.logger = logger
-        self.agent_factory = AgentFactory(self.logger)
+        self.agent_factory = AgentFactory()
         self._preprocess_input()
+        self.conn = None
         self.app = None
-    
+        self.db_path = Config.LANGGRAPH_CHECKPOINTS_DB
+
     def __init__(self, story_teller_item: StoryTellerItem):
         self.graph = StateGraph(AgentState)
         self.scenario = story_teller_item.scenario
         self.champions_json = story_teller_item.champions
         self.logger = story_teller_item.logger
-        self.agent_factory = AgentFactory(self.logger)
+        self.agent_factory = AgentFactory()
         self._preprocess_input()
+        self.conn = None
         self.app = None
+        self.db_path = Config.LANGGRAPH_CHECKPOINTS_DB
 
     def _preprocess_input(self):
         self.champion_agents = {}
@@ -43,10 +48,10 @@ class StoryTeller:
             champ_traits = set(champ["personality"])
             champ_model = ModelChoices[champ["models"]]
             champ_agent_config = ChampionAgentConfig(
-                role=Role[champ_name], 
-                model=champ_model, 
+                role=Role[champ_name],
+                model=champ_model,
                 traits=champ_traits,
-                story_context=self.scenario  # Pass scenario for lore summarization
+                story_context=self.scenario,
             )
             self.champion_agents[champ_name] = self.agent_factory.create_champion_agent(
                 champ_agent_config
@@ -70,10 +75,7 @@ class StoryTeller:
             )
         )
         summarizer_bot = self.agent_factory.create_summarizer_agent(
-            SummarizerAgentConfig(
-                role=Role.Summarizer, 
-                model=ModelChoices.Summarizer
-            )
+            SummarizerAgentConfig(role=Role.Summarizer, model=ModelChoices.Summarizer)
         )
         novel_bot = self.agent_factory.create_novel_writer_agent(
             NovelWriterAgentConfig(
@@ -102,37 +104,60 @@ class StoryTeller:
             self.graph.add_edge("SummarizerBot", "RoleAssignerBot")
         self.graph.add_edge("NovelWriterBot", END)
 
-        # folder to store sqlite db
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        db_folder = os.path.abspath(os.path.join(base_dir, "..", "..", "..", "logs"))
-        conn = sqlite3.connect(f"{db_folder}/langgraph_checkpoints.sqlite", check_same_thread=False)
-        memory = SqliteSaver(conn)
+        print(f"\n{'='*60}")
+        print(f"DB path: {self.db_path}")
+        print(f"{'='*60}\n")
+
+        # Use config path
+        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        memory = SqliteSaver(self.conn)
         self.app = self.graph.compile(checkpointer=memory)
 
-        with open("graph.png", "wb") as f:
-            f.write(self.app.get_graph().draw_mermaid_png())
+        # Save graph visualization using config path
+        try:
+            with open(str(Config.GRAPH_VISUALIZATION_PATH), "wb") as f:
+                f.write(self.app.get_graph().draw_mermaid_png())
+            print(f"Graph visualization saved to {Config.GRAPH_VISUALIZATION_PATH}\n")
+        except Exception as e:
+            print(f"Warning: Could not save graph visualization: {e}\n")
 
     def invoke(self):
         thread_id = "session_1"
-        
-        # Create the configurable dictionary with recursion_limit included
-        config = {
-            "configurable": {
-                "thread_id": thread_id
-            },
-            "recursion_limit": 100
-        }
+        config = {"configurable": {"thread_id": thread_id}, "recursion_limit": 100}
 
-        self.app.invoke(
+        result = self.app.invoke(
             AgentState(
-                messages=[], 
-                model=None, 
-                next_bot=[], 
-                event_list=[], 
-                ai_response=""
+                messages=[], model=None, next_bot=[], event_list=[], ai_response=""
             ),
-            config  # Pass config as the second argument
+            config,
         )
+        if self.conn:
+            self.conn.commit()
+            self.conn.close()
+
+        try:
+            self.logger.export_and_save_checkpoints_to_s3(self.db_path)
+            self.logger._cleanup_database(self.db_path)
+        except Exception as e:
+            raise
+
+        # serializable_result = {
+        #     'ai_response': result.get('ai_response', ''),
+        #     'messages': [
+        #         {
+        #             'role': getattr(msg, 'type', 'unknown'),
+        #             'content': msg.content if hasattr(msg, 'content') else str(msg)
+        #         }
+        #         for msg in result.get('messages', [])
+        #     ],
+        #     'event_list': list(result.get('event_list', [])),
+        #     'next_bot': result.get('next_bot', []),
+        #     'model': str(result.get('model', '')) if result.get('model') else None
+        # }
+
+        # get the content of ai_response
+        return result["ai_response"].content
+
 
 def role_assigner_node(state):
     if len(state["next_bot"]) > 0:
@@ -154,15 +179,11 @@ if __name__ == "__main__":
 
     scenario = "Twisted Fate and Zed are computer science students. They are arguing about their group project."
     json_input = [
-        {
-            "name": "Zed",
-            "personality": "Happy",
-            "models": "gemini_2_0_flash_lite"
-        },
+        {"name": "Zed", "personality": "Happy", "models": "gemini_2_0_flash_lite"},
         {
             "name": "TwistedFate",
             "personality": "Sad",
-            "models": "gemini_2_0_flash_lite"
+            "models": "gemini_2_0_flash_lite",
         },
     ]
     logger = Logger()

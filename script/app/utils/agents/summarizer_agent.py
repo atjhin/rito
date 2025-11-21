@@ -69,7 +69,5 @@ class SummarizerAgent(Agent):
 
         summary = llm.invoke(messages_for_ai)
 
-        self._log_llm_invocation(messages_for_ai, summary) # !
-
         state["messages"] = [summary] + tail
         return state
