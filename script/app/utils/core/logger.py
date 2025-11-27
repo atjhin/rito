@@ -7,7 +7,7 @@ import os
 import boto3
 from dotenv import load_dotenv
 from app.utils.constants.path_config import Config
-
+import subprocess
 import sqlite3
 import json
 import pandas as pd
@@ -18,6 +18,14 @@ class Logger:
     def __init__(self):
         self.log_dir = Config.LOGS_DIR
         pass
+
+    def get_git_commit(self):
+        """Get current git commit hash"""
+        try:
+            commit = subprocess.getoutput("git rev-parse HEAD").strip()
+            return commit
+        except:
+            return "unknown"
 
     def export_and_save_checkpoints_to_s3(self, db_path):
         """
@@ -49,6 +57,7 @@ class Logger:
                     
                     # Extract the important information
                     record = {
+                        'git_commit': self.get_git_commit(),
                         'thread_id': thread_id,
                         'checkpoint_number': i + 1,
                         'checkpoint_id': checkpoint_config.get('configurable', {}).get('checkpoint_id', 'N/A'),
