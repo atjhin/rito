@@ -5,14 +5,19 @@ from dotenv import load_dotenv
 from pathlib import Path
 from langchain.chat_models import init_chat_model
 
+
 load_dotenv()
 
 DICT_API = {
-    'gemini': os.getenv("GOOGLE_API_KEY")
+    'gemini': os.getenv("GOOGLE_API_KEY"),
+    'openai': os.getenv("OPENAI_API_KEY"),
+    'xai': os.getenv("XAI_API_KEY") 
 }
 
 DICT_PROVIDER ={
-    'gemini': "google_genai"
+    'gemini': "google_genai",
+    'openai': "openai",
+    'xai': "xai"
 }
 
 class ModelConfig:
@@ -72,7 +77,9 @@ class ModelChoices(Enum):
     gemini_2_0_flash_lite = ModelConfig("gemini-2.0-flash-lite", "gemini")
     gemini_2_5_flash_lite = ModelConfig("gemini-2.5-flash-lite", "gemini")
     gemini_2_5_flash = ModelConfig("gemini-2.5-flash", "gemini")
-    Summarizer = ModelConfig("gemini-2.5-flash", "gemini")
-    Event = ModelConfig("gemini-2.5-flash-lite", "gemini")
-    Novel = ModelConfig("gemini-2.5-flash-lite", "gemini")
-    RoleAssigner = ModelConfig("gemini-2.5-flash-lite", "gemini")
+    gpt_4o_mini = ModelConfig("gpt-4o-mini", "openai")
+    gpt_4o = ModelConfig("gpt-4o", "openai")
+    Summarizer = ModelConfig("grok-4", "xai")
+    Event = ModelConfig("gemini-2.5-flash", "gemini")
+    Novel = ModelConfig("gemini-2.5-flash", "gemini")
+    RoleAssigner = ModelConfig("gemini-2.5-flash-lite", "xai")

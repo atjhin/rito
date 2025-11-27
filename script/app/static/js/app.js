@@ -1,5 +1,5 @@
 // Global state and helper functions
-const state = { champions: [], models: [], counter: 0, MAX: 4, MIN: 2, retryCount: 0 };
+const state = { champions: [], counter: 0, MAX: 4, MIN: 2, retryCount: 0 };
 const escapeHtml = (s) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }[c]));
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -29,58 +29,12 @@ async function loadList(path) {
         if (location.protocol === 'file:') {
             toast(`Running from file:// — using fallback data for ${path}`);
         }
-        const id = path.includes('champ') ? 'fallbackChampions' : 'fallbackModels';
-        const el = document.getElementById(id);
+        const el = document.getElementById('fallbackChampions');
         if (el) {
             try { return JSON.parse(el.textContent).filter(Boolean); } catch (e) { }
         }
-        return path.includes('champ')
-            ? ["Ahri", "Annie", "Ezreal", "Lulu", "Malzahar", "Twisted Fate", "Vladmir", "Zed"]
-            : ["gpt-4o", "gpt-4o-mini", "claude-3.5-sonnet", "claude-3-opus", "llama-3.1-70b", "mistral-large", "gemini-2.5-flash"];
+        return ["Ahri", "Annie", "Ezreal", "Lulu", "Malzahar", "Twisted Fate", "Vladmir", "Zed"];
     }
-}
-
-/**
- * Populates a <select> element with <option> tags.
- */
-function renderModelOptions(selectEl, models, currentSelected = []) {
-    selectEl.innerHTML = models.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
-    [...selectEl.options].forEach(o => {
-        if (currentSelected.includes(o.value)) o.selected = true;
-    });
-}
-
-/**
- * Synchronizes the selected options in the <select> with the visible pills.
- */
-function syncPills(selectEl, pillbar, onRemove) {
-    const selected = [...selectEl.selectedOptions].map(o => o.value);
-
-    [...pillbar.children].forEach(pill => {
-        const value = pill.dataset.value;
-        if (!selected.includes(value)) {
-            pill.classList.add('removing');
-            pill.addEventListener('animationend', () => pill.remove(), { once: true });
-        }
-    });
-
-    selected.forEach(val => {
-        if (![...pillbar.children].some(p => p.dataset.value === val)) {
-            const pill = document.createElement('span');
-            pill.className = 'pill';
-            pill.dataset.value = val;
-            pill.innerHTML = `${escapeHtml(val)} <button type="button" title="Remove ${escapeHtml(val)}" aria-label="Remove ${escapeHtml(val)}"><span aria-hidden="true">×</span></button>`;
-
-            const removeBtn = pill.querySelector('button');
-            removeBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (onRemove) onRemove(val);
-            });
-
-            pillbar.appendChild(pill);
-        }
-    });
 }
 
 /**
@@ -142,7 +96,6 @@ function enforceUniqueName(inputEl) {
         inputEl.value = '';
         inputEl.classList.add('invalid');
 
-        // FIX for persistent datalist: defer validation/refresh
         setTimeout(() => {
             refreshDatalists();
             validateForm();
@@ -175,10 +128,9 @@ function markValidity() {
         const nameInput = card.querySelector('.char-name-input');
         const name = nameInput.value.trim();
         const duplicate = name && dupes.has(name.toLowerCase());
-        const models = [...card.querySelector('select').selectedOptions];
 
         nameInput.classList.toggle('invalid', !name || duplicate);
-        const isValid = name && models.length && !duplicate;
+        const isValid = name && !duplicate;
         card.classList.toggle('invalid', !isValid);
     });
 }
@@ -186,7 +138,7 @@ function markValidity() {
 /**
  * Creates a new character card DOM node from the template.
  */
-function createCharacterCard({ name = '', personality = '', preselected = [] } = {}) {
+function createCharacterCard({ name = '', personality = '' } = {}) {
     const tpl = document.getElementById('charCardTemplate');
     const node = tpl.content.cloneNode(true);
     const card = node.querySelector('.char-card');
@@ -196,89 +148,21 @@ function createCharacterCard({ name = '', personality = '', preselected = [] } =
     const personalityInput = node.querySelector('.char-personality-input');
     const personalityCount = node.querySelector('.char-personality-count');
     const datalist = node.querySelector('datalist');
-    const select = node.querySelector('select');
-    const pillbar = node.querySelector('.pillbar');
-    const modelsLabel = node.querySelector('.multi label');
 
     const id = `char-${++state.counter}`;
     card.dataset.charId = id;
     nameInput.setAttribute('list', `${id}-champions`);
     datalist.id = `${id}-champions`;
-    modelsLabel.setAttribute('for', `${id}-models`);
-    select.id = `${id}-models`;
 
     datalist.innerHTML = state.champions.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
     nameInput.value = name;
 
-    // Set personality value and update counter
     if (personalityInput) {
         personalityInput.value = personality;
         if (personalityCount) {
             personalityCount.textContent = `${personality.length} / 200`;
         }
     }
-
-    const selectedModels = preselected.length > 0 ? preselected : ['gemini-2.5-flash'];
-    renderModelOptions(select, state.models, selectedModels);
-
-    const selectedSet = new Set(selectedModels);
-
-    function updateSelectState() {
-        [...select.options].forEach(opt => {
-            opt.selected = selectedSet.has(opt.value);
-        });
-    }
-
-    function toggleOption(optionValue) {
-        if (selectedSet.has(optionValue)) {
-            selectedSet.delete(optionValue);
-        } else {
-            selectedSet.add(optionValue);
-        }
-        updateSelectState();
-        syncPills(select, pillbar, toggleOption);
-        validateForm();
-        markValidity();
-    }
-
-    select.addEventListener('mousedown', (e) => {
-        if (e.target.tagName === 'OPTION') {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleOption(e.target.value);
-            return false;
-        }
-    });
-
-    select.addEventListener('keydown', (e) => {
-        if (e.key === ' ' || e.key === 'Enter') {
-            e.preventDefault();
-            e.stopPropagation();
-            const focusedOption = select.querySelector('option:focus');
-            if (focusedOption) {
-                toggleOption(focusedOption.value);
-            }
-        }
-    });
-
-    select.addEventListener('click', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-
-    select.addEventListener('change', e => {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
-    });
-
-    select.addEventListener('mousemove', e => {
-        e.preventDefault();
-    });
-
-    updateSelectState();
-    syncPills(select, pillbar, toggleOption);
 
     // Personality character counter
     if (personalityInput && personalityCount) {
@@ -306,7 +190,6 @@ function createCharacterCard({ name = '', personality = '', preselected = [] } =
         markValidity();
     });
 
-    // 🚀 FIX FOR INSTANT CARD REMOVAL
     removeBtn.addEventListener('click', () => {
         const total = $$('#charCarousel .char-card').length;
         if (total <= state.MIN) {
@@ -314,9 +197,7 @@ function createCharacterCard({ name = '', personality = '', preselected = [] } =
             return;
         }
 
-        // Function to handle the removal and subsequent cleanup
         const handleRemoval = () => {
-            // Check if the card is still in the DOM before removing
             if (card.parentNode) {
                 card.remove();
                 applyLayout();
@@ -327,7 +208,6 @@ function createCharacterCard({ name = '', personality = '', preselected = [] } =
             }
         };
 
-        // 🔑 Call the removal logic immediately to bypass animation/timeout delay.
         handleRemoval();
     });
 
@@ -412,9 +292,8 @@ function validateForm() {
 
     const okEach = cards.every(card => {
         const name = card.querySelector('.char-name-input').value.trim();
-        const models = [...card.querySelector('select').selectedOptions].map(o => o.value);
         const duplicate = name && dupes.has(name.toLowerCase());
-        return name.length > 0 && models.length > 0 && !duplicate;
+        return name.length > 0 && !duplicate;
     });
 
     const allValid = okStory && okCount && okEach && okUnique;
@@ -431,12 +310,11 @@ function buildPayload() {
         const name = card.querySelector('.char-name-input').value.trim();
         const personalityInput = card.querySelector('.char-personality-input');
         const personality = personalityInput ? personalityInput.value.trim() : '';
-        const models = [...card.querySelector('select').selectedOptions].map(o => o.value);
 
         return {
             name,
             personality: personality || null,
-            models
+            models: ['Grok-4']  // Fixed model
         };
     });
     return { story, characters: chars };
@@ -460,10 +338,7 @@ function enableHorizontalWheelScroll(el) {
 (async function init() {
     document.body.classList.add('is-init');
 
-    [state.champions, state.models] = await Promise.all([
-        loadList('static/champions.txt'),
-        loadList('static/models.txt')
-    ]);
+    state.champions = await loadList('static/champions.txt');
 
     addCharacter({}, { animate: false });
     addCharacter({}, { animate: false });
@@ -506,7 +381,7 @@ function enableHorizontalWheelScroll(el) {
         }
 
         const payload = buildPayload();
-        payload.retry_count = state.retryCount;  // Include retry count
+        payload.retry_count = state.retryCount;
         
         console.log('--- FORM SUBMITTED ---');
         console.log(JSON.stringify(payload, null, 2));
@@ -517,7 +392,6 @@ function enableHorizontalWheelScroll(el) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Processing...';
 
-        // Send the payload to the Flask backend
         fetch('/submit-data', {
             method: 'POST',
             headers: {
@@ -530,7 +404,6 @@ function enableHorizontalWheelScroll(el) {
             console.log('Server response:', data);
             
             if (data.needs_retry) {
-                // Story validation failed, show feedback
                 state.retryCount = data.retry_count;
                 
                 feedbackDiv.textContent = `⚠️ ${data.feedback} (Attempt ${data.retry_count}/3)`;
@@ -538,7 +411,6 @@ function enableHorizontalWheelScroll(el) {
                 toast(`⚠️ ${data.feedback}`);
                 
             } else if (data.auto_generated) {
-                // Max retries reached, story was auto-generated
                 state.retryCount = 0;
                 
                 const storyTextarea = $('#story');
@@ -552,13 +424,11 @@ function enableHorizontalWheelScroll(el) {
                 toast('ℹ️ Story generated. Please review and submit.');
                 
             } else if (data.success) {
-                // Story generation started successfully
                 state.retryCount = 0;
                 toast('✅ Story generation started!');
                 feedbackDiv.style.display = 'none';
                 
             } else {
-                // Other error
                 toast('❌ Server failed to process request.');
             }
         })

@@ -14,125 +14,15 @@ bp = Blueprint('main', __name__)
 def index():
     return render_template('index.html')
 
-#testing purposes
-# @bp.route('/submit-data', methods=['POST'])
-# def receive_data_test():
-
-#     scenario = "Twisted Fate and Zed are computer science students. They are arguing about their group project."
-#     json_input = [
-#         {
-#             "name": "Zed",
-#             "personality": "Happy",
-#             "models": "gemini_2_5_flash_lite"
-#         },
-#         {
-#             "name": "TwistedFate",
-#             "personality": "Sad",
-#             "models": "gemini_2_5_flash_lite"
-#         },
-#     ]
-#     logger = Logger()
-#     story_teller = StoryTeller(
-#         StoryTellerItem(
-#             scenario=scenario, champions=json_input, logger=logger
-#         )
-#     )
-
-#     assert story_teller is not None
-#     story_teller.build_graph()
-#     print(story_teller.invoke())  
-  
-#     return jsonify({"success": True, "message": "Payload received by server"}), 200
-
-
-#original code below without LLM
-'''
-@bp.route('/submit-data', methods=['POST'])
-def receive_data():
-    if not request.is_json:
-        return jsonify({"success": False, "message": "Expected application/json body"}), 400
-
-    data = request.get_json(silent=True) or {}
-    story = data.get("story")
-    characters = data.get("characters")
-
-    if not story or not isinstance(characters, list) or not characters:
-        return jsonify({
-            "success": False,
-            "message": "Body must include 'story' (str) and non-empty 'characters' (list)."
-        }), 400
-
-    
-    MODEL_ALIASES = {
-        "gemini-2.5-flash": "gemini_2_5_flash_lite",
-        "gemini-2.0-flash": "gemini_2_0_flash_lite",
-       
-    }
-    DEFAULT_MODEL = "gemini_2_5_flash_lite"  
-    
-    DEFAULT_PERSONALITY = "Neutral"
-
-    def normalize_model(m):
-        if not m:
-            return DEFAULT_MODEL
-        m_lower = str(m).strip().lower()
-        if m_lower in MODEL_ALIASES:
-            return MODEL_ALIASES[m_lower]
-        fallback = "".join(ch if ch.isalnum() else "_" for ch in m_lower)
-        return MODEL_ALIASES.get(m_lower, fallback)
-
-    champions = []
-    for c in characters:
-        name = c.get("name")
-        p_raw = c.get("personality")
-        personality = (
-            p_raw.strip() if isinstance(p_raw, str) and p_raw.strip() else DEFAULT_PERSONALITY
-        )
-        models = c.get("models")
-
-        if not name:
-            return jsonify({"success": False, "message": "Each character needs a 'name'."}), 400
-
-        # Accept list or string; normalize each, then pick first for now
-        if isinstance(models, list):
-            norm_models = [normalize_model(x) for x in models if x]
-            model_value = norm_models[0] if norm_models else DEFAULT_MODEL
-        else:
-            model_value = normalize_model(models)
-
-        champions.append({
-            "name": name,
-            "personality": personality,
-            "models": model_value 
-        })
-
-    #print(champions)
-    #print(story)
-
-    logger = Logger()
-    story_teller = StoryTeller(
-        StoryTellerItem(
-            scenario=story, champions=champions, logger=logger
-        )
-    )
-
-    assert story_teller is not None
-    story_teller.build_graph()
-    print(story_teller.invoke())  
-  
-    return jsonify({"success": True, "message": "Payload received by server"}), 200
-
-'''
-
 load_dotenv()  
 
-_GEMINI_MODEL_NAME = "gemini-2.0-flash-lite"  
-_API_KEY = os.getenv("GOOGLE_API_KEY")
+_GROK_MODEL_NAME = "grok-4"  
+_API_KEY = os.getenv("XAI_API_KEY")
 if not _API_KEY:
-    raise RuntimeError("GOOGLE_API_KEY missing in environment")
+    raise RuntimeError("XAI_API_KEY missing in environment")
 
 genai.configure(api_key=_API_KEY)
-_gemini_model = genai.GenerativeModel(_GEMINI_MODEL_NAME)
+_grok_model = genai.GenerativeModel(_GROK_MODEL_NAME)
 
 # -----------------------------
 # Simple validators
@@ -175,7 +65,7 @@ def _llm_refine_story_if_needed(story: str) -> dict:
             4. Output ONLY the final scenario text, with no commentary, quotes, or formatting.
             """
 
-    resp = _gemini_model.generate_content(prompt)
+    resp = _grok_model.generate_content(prompt)
     refined = (resp.text or "").strip()
     
     # Normalize for comparison (remove trailing punctuation)
@@ -221,7 +111,7 @@ def _llm_infer_personality_if_needed(champ_name: str, personality: str | None) -
             4. Return ONLY the final personality text — no quotes, commentary, punctuation, or extra words.
             """
 
-    resp = _gemini_model.generate_content(prompt)
+    resp = _grok_model.generate_content(prompt)
     text = (resp.text or "").strip()
     # Final cleanup: keep it short
     words = text.split()
@@ -248,10 +138,9 @@ def receive_data():
         }), 400
 
     MODEL_ALIASES = {
-        "gemini-2.5-flash": "gemini_2_5_flash_lite",
-        "gemini-2.0-flash": "gemini_2_0_flash_lite",
+        "grok-4": "grok-4",
     }
-    DEFAULT_MODEL = "gemini_2_5_flash_lite"
+    DEFAULT_MODEL = "grok-4"
     DEFAULT_PERSONALITY = "Neutral"  
 
     def normalize_model(m):
