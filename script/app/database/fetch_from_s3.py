@@ -32,12 +32,6 @@ def get_champs_and_models_txt(save_path: str):
 
 
 def fetch_champion_data_from_s3(character_name, attribute, source="champions_fandom"):
-    import boto3
-    from botocore.exceptions import NoCredentialsError, PartialCredentialsError
-    import os
-    from dotenv import load_dotenv
-
-    load_dotenv()
 
     bucket = os.getenv("S3_BUCKET")
 
@@ -80,15 +74,6 @@ def fetch_champion_data_from_s3(character_name, attribute, source="champions_fan
         return None
     
 def get_all_characters_from_s3(source="champions_fandom"):
-    import boto3
-    from botocore.exceptions import NoCredentialsError, PartialCredentialsError
-    import os
-    from dotenv import load_dotenv
-    import json
-
-    basedir = os.path.dirname(os.path.abspath(__file__))
-    env_path = os.path.join(basedir, '.env')
-    load_dotenv(env_path)
 
     bucket = os.getenv("S3_BUCKET")
 
@@ -114,3 +99,50 @@ def get_all_characters_from_s3(source="champions_fandom"):
         print(f"An error occurred: {e}")
         return []
     
+
+def get_sample_fanfiction_from_s3():
+    import random
+    
+    bucket = os.getenv("S3_BUCKET")
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=os.getenv("S3_ACCESS_KEY"),
+        aws_secret_access_key=os.getenv("S3_SECRET_KEY"),
+        region_name=os.getenv("S3_REGION")
+    )
+    
+    try: 
+        path = "sample_fanfictions/"
+        
+        # List all objects in the directory
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=path)
+        
+        # Check if any files exist
+        if 'Contents' not in response:
+            print(f"No files found in {path}")
+            return None
+        
+        # Filter out directories (keys ending with '/')
+        files = [obj['Key'] for obj in response['Contents'] if not obj['Key'].endswith('/')]
+        
+        if not files:
+            print(f"No files found in {path}")
+            return None
+        
+        # Pick a random file
+        random_file = random.choice(files)
+        print(f"Selected random file: {random_file}")
+        
+        # Download and read the file
+        obj = s3.get_object(Bucket=bucket, Key=random_file)
+        content = obj['Body'].read().decode('utf-8')
+        
+        return {
+            'key': random_file,
+            'filename': os.path.basename(random_file),
+            'content': content
+        }
+        
+    except Exception as e:
+        print(f"Error reading from S3: {e}")
+        return None

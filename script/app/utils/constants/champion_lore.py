@@ -23,3 +23,18 @@ def get_lore(name, story_context=None):
         return summarize_lore(name, lore, story_context)
     
     return lore
+
+
+def get_sample_fanfiction():
+    """
+    Fetch sample fanfiction from S3.
+    
+    Returns:
+        Sample fanfiction text
+    """
+    fanfiction = fetch_champion_data_from_s3("sample_fanfiction", "fanfiction", source="sample_fanfiction")
+    
+    if not fanfiction:
+        return "No sample fanfiction available."
+    
+    return fanfiction
