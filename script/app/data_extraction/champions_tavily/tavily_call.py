@@ -8,7 +8,7 @@ import os
 load_dotenv()
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
-
+assert TAVILY_API_KEY is not None, "TAVILY_API_KEY not found in environment variables"
 def get_tool():
     tool = TavilySearch(
         max_results=5,

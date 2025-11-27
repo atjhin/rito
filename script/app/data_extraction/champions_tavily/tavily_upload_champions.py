@@ -1,14 +1,14 @@
 import boto3
 import os
 from dotenv import load_dotenv
-from tavily_call import get_tavily_all_champions
+from champions_tavily.tavily_call import get_tavily_all_champions
 import re
 from datetime import datetime
 from typing import Dict
 
 load_dotenv()
 # === Configuration ===
-S3_BUCKET = os.environ.get("S3_BUCKET_NAME")
+S3_BUCKET = os.environ.get("S3_BUCKET")
 S3_REGION = os.environ.get("S3_REGION")
 S3_ACCESS_KEY = os.environ.get("S3_ACCESS_KEY")
 S3_SECRET_KEY = os.environ.get("S3_SECRET_KEY")
@@ -71,8 +71,10 @@ def check_champion_exists(client: boto3.client("s3"), base_dir: str, champ_name:
     response = client.list_objects_v2(Bucket=bucket, Prefix=prefix, MaxKeys=1)
     return 'Contents' in response
 
-if __name__ == "__main__":
 
+
+
+def upload_champions_to_s3():
     client = boto3.client(
     "s3",
     region_name=S3_REGION,
@@ -80,8 +82,8 @@ if __name__ == "__main__":
     aws_secret_access_key=S3_SECRET_KEY,
     )
 
-    data = champions = get_tavily_all_champions(
-        limit=None,
+    data = get_tavily_all_champions(
+        limit=1,
         background=True,
         personality=True,
         appearance=True
