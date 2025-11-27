@@ -3,10 +3,9 @@ from typing import List, Dict, Optional
 from app.utils.constants.models import ModelConfig
 from app.utils.constants.roles import Role
 from app.utils.data_models.agent_state import AgentState
-from app.utils.data_models.agent_logger_item import AgentLoggerItem
 
 
-from langchain_core.messages import SystemMessage, HumanMessage, BaseMessage
+from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.tools import BaseTool
 
 
@@ -33,7 +32,6 @@ class Agent(ABC):
         self._tools: List[BaseTool] = []
         self._system_message = self._init_system_message()
         self._human_message = self._init_human_message()
-        self.logger = None
 
         if not isinstance(self._system_message, SystemMessage):
             raise TypeError(
@@ -88,55 +86,16 @@ class Agent(ABC):
         if self._active_model_key is None:
             raise RuntimeError("No active model set.")
         
-        if self.logger is None: 
-            raise RuntimeError("Logger instance not set.")
-        
+
         llm = self._models[self._active_model_key].get_llm()
         
         if self._tools:
             llm = llm.bind_tools(self._tools)
 
-        messages_for_ai = [self._system_message] + state["messages"] + [self._human_message]
-        # self._log_llm_input(self._active_model_key, messages_for_ai)    
+        messages_for_ai = [self._system_message] + state["messages"] + [self._human_message]  
 
         ai = llm.invoke(messages_for_ai)
-
-        self._log_llm_invocation(messages_for_ai, ai)
-
-        # self._log_llm_output(ai)
 
         updated_message = state["messages"] + [ai] if add_to_state else state["messages"]
 
         return {"messages": updated_message, "ai_response": ai}
-        # return {"messages": state["messages"] + [ai]} if add_to_state else {"messages": state["messages"]}
-
-    def _log_llm_invocation(self, messages_for_ai: List[BaseMessage], ai: BaseMessage):
-        """Logs the LLM invocation details using the Logger instance."""
-        self.logger.log_llm_invocation(
-                AgentLoggerItem(
-                    agent_role_name=self.role_name.value,
-                    model_name=self._active_model_key,
-                    messages=messages_for_ai,
-                    output_message=ai
-                )
-            )
-
-
-    def _log_llm_input(self, model_key: str, input_messages: List[BaseMessage]):
-        """Logs the model, prompt, and full context."""
-        print(f"\n--- {self.role_name.value} Input Log ---")
-        print(f"Model: {model_key}")
-        print(f"Total Messages Sent: {len(input_messages)}")
-        # Log the full context by converting messages to a printable format
-        for msg in input_messages:
-            print(f"  [{msg.type.upper()}]: {msg.content[:80]}...") # Print first 80 chars
-        print(f"---------------------\n")
-
-    def _log_llm_output(self, output_message: BaseMessage):
-        """Logs the raw AI response."""
-        print(f"\n--- {self.role_name.value} Output Log ---")
-        print(f"AI Content: {output_message.content[:80]}...")
-        if output_message.tool_calls:
-            print(f"Tool Calls Detected: {len(output_message.tool_calls)}")
-        # Log other metadata as needed, e.g., token usage from response_metadata
-        print(f"----------------------\n")
