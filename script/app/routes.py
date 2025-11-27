@@ -126,7 +126,7 @@ def receive_data():
 
 load_dotenv()  
 
-_GEMINI_MODEL_NAME = "gemini-2.5-flash-lite"  
+_GEMINI_MODEL_NAME = "gemini-2.0-flash-lite"  
 _API_KEY = os.getenv("GOOGLE_API_KEY")
 if not _API_KEY:
     raise RuntimeError("GOOGLE_API_KEY missing in environment")
@@ -280,13 +280,11 @@ def receive_data():
         # Use LLM-generated story after max retries
         story_validated = validation_result["story"]
         auto_generated = True
-        story_is_valid = False
         print(f"Max retries reached. Using LLM-generated story: {story_validated}")
     else:
         # Use original valid story
         story_validated = validation_result["story"]
         auto_generated = False
-        story_is_valid = validation_result["valid"]
 
     champions = []
     for c in characters:
@@ -351,6 +349,5 @@ def receive_data():
         "message": "Payload processed",
         "result": result,
         "scenario_used": story_validated,
-        "champions_used": champions,
-        "story_was_valid": story_is_valid
+        "champions_used": champions
     }), 200

@@ -47,6 +47,16 @@
         <button id="submitBtn" class="btn" type="button">Submit Configuration</button>
       </div>
       <div id="validationFeedback" style="display: none; margin-top: 16px; padding: 12px; border-radius: 8px; background: #fff3cd; border: 1px solid #ffc107; color: #856404;"></div>
+      <div id="storyOutput" class="card" style="display: none; margin-top: 32px; animation: fadeInUp 0.5s ease-out;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent);">
+            <path d="M12 2L2 7v10c0 5.5 3.8 9.7 9 11 5.2-1.3 9-5.5 9-11V7l-10-5z"/>
+            <path d="M12 8v8M8 12h8"/>
+          </svg>
+          <h3 style="margin: 0; font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.5px;">Generated Story</h3>
+        </div>
+        <div id="storyContent" style="white-space: pre-wrap; line-height: 1.8; color: var(--text); font-size: 15px; opacity: 0.95; padding: 16px; background: rgba(255, 255, 255, 0.02); border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.1);"></div>
+      </div>
       <p class="footer-note">Configure 2–4 characters. Click <strong>+</strong> to add more characters. Use the scroll
         bar or mouse wheel to navigate.</p>
     </section>
