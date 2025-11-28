@@ -425,8 +425,19 @@ function enableHorizontalWheelScroll(el) {
                 
             } else if (data.success) {
                 state.retryCount = 0;
-                toast('✅ Story generation started!');
+                toast('✅ Story generation complete!');
                 feedbackDiv.style.display = 'none';
+                
+                // Display the generated story
+                if (data.result) {
+                    const storyOutputDiv = $('#storyOutput');
+                    const storyContentDiv = $('#storyContent');
+                    storyContentDiv.textContent = data.result;
+                    storyOutputDiv.style.display = 'block';
+                    
+                    // Scroll to the story output
+                    storyOutputDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
                 
             } else {
                 toast('❌ Server failed to process request.');
