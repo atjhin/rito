@@ -282,6 +282,7 @@ class StoryTeller:
 
     def invoke(self):
         stats_collector = RequestCounter()
+        thread_id = "session_1"
         
         config = {
             "configurable": {
@@ -291,7 +292,7 @@ class StoryTeller:
             "callbacks": [stats_collector, self.debug]
         }
 
-        self.app.invoke(
+        result = self.app.invoke(
             AgentState(
                 messages=[], model=None, next_bot=[], event_list=[], ai_response=""
             ),
@@ -325,7 +326,7 @@ class StoryTeller:
         # }
 
         # get the content of ai_response
-        # return result["ai_response"].content
+        return result["ai_response"].content
 
 
 def role_assigner_node(state):
