@@ -1,5 +1,5 @@
 from langchain_core.messages import BaseMessage
-from typing import List
+from typing import List, Any
 import pandas as pd
 import json
 import io
@@ -13,6 +13,56 @@ import json
 import pandas as pd
 from datetime import datetime
 from langgraph.checkpoint.sqlite import SqliteSaver
+
+def _content_to_text(content: Any) -> str:
+    """
+    Normalize various LLM content formats to a plain string.
+
+    Handles:
+    - None -> ""
+    - str -> as-is
+    - list of dict/str/etc -> join text parts
+    - dict with 'text'/'content' keys -> that value
+    - anything else -> str(content)
+    """
+    if content is None:
+        return ""
+
+    # Simple string
+    if isinstance(content, str):
+        return content
+
+    # List of parts (common for tool-calls / multi-part responses)
+    if isinstance(content, list):
+        parts = []
+        for part in content:
+            if isinstance(part, dict):
+                # Common patterns: {"type": "text", "text": "..."}
+                if "text" in part and isinstance(part["text"], str):
+                    parts.append(part["text"])
+                elif "content" in part and isinstance(part["content"], str):
+                    parts.append(part["content"])
+                else:
+                    parts.append(str(part))
+            else:
+                parts.append(str(part))
+        return "\n".join(parts)
+
+    # Dict content (rare, but be defensive)
+    if isinstance(content, dict):
+        if "text" in content and isinstance(content["text"], str):
+            return content["text"]
+        if "content" in content and isinstance(content["content"], str):
+            return content["content"]
+        # fall back to JSON-ish representation
+        try:
+            return json.dumps(content, ensure_ascii=False)
+        except TypeError:
+            return str(content)
+
+    # Fallback: just stringify
+    return str(content)
+
 
 class Logger:
     def __init__(self):
