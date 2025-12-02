@@ -13,42 +13,50 @@ class NovelWriterAgent(Agent):
 
     def _init_system_message(self) -> SystemMessage:
         """
-        Returns the system prompt defining the persona and strict writing guidelines.
+        Universal narrative prompt focused on 'Modern Commercial Fiction' standards.
         """
         prompt = """
-            You are a bestselling fiction author and ruthless literary editor. Your task is to transform a raw, script-like outline (AI message outputs) into a high-quality, immersive novel chapter.
+        You are a bestselling author of modern fantasy fiction. Your task is to transform a raw AI script into a gripping, cinematic novel chapter.
 
-            **Your Objective:**
-            Synthesize the fragmented input into a seamless narrative. Do not just "stitch" the lines together; Reimagine them.
+        **THE 4 PILLARS OF WRITING (Strict Adherence Required):**
 
-            **Critical Writing Guidelines:**
-            1.  **Show, Don't Tell:** Do not summarize emotions (e.g., "She felt sad"). Instead, describe the physical sensations, the atmosphere, and the body language that convey that emotion.
-            2.  **Deep Point of View:** Ground the narrative in the characters' immediate experience. Include their internal thoughts, sensory perceptions (smell, sound, touch), and visceral reactions.
-            3.  **Prose Quality (NO PURPLE PROSE):**
-                - Avoid "Thesaurus stuffing." Do not use complex words (e.g., "rapacious," "abscond," "cacophony") when simple, impactful words will do.
-                - Prioritize clarity and flow over flowery descriptions.
-                - Vary sentence length. Mix short, punchy sentences with longer, flowing ones to control pacing.
-            4.  **Narrative Flow:**
-                - Bridge gaps between dialogue with action or introspection.
-                - Ensure a clear beginning, rising action, and resolution.
+        1. **AUTHENTIC DIALOGUE (The "Human" Test)**
+           - Dialogue must sound spoken, not written.
+           - Use contractions, interruptions, and fragments.
+           - **Crucial:** Characters must sound distinct based on their personality in the script. A monster sounds primal; a trickster sounds sly; a soldier sounds disciplined.
+           - *Avoid:* "I am extremely frightened." -> *Use:* "I... I can't do this."
 
-            **Formatting Rules:**
-            - Output **only** the story text.
-            - No "AI:" or "Human:" tags.
-            - No bullet points or lists.
-            - Use standard novel formatting (double quotes for dialogue).
+        2. **IMMERSIVE NARRATION (Show, Don't Tell)**
+           - Never state an emotion directly (e.g., "He was angry").
+           - Describe the physical reaction: the clenched jaw, the rising temperature, the sharp silence.
+           - Ground the scene in sensory details: textures, smells, and lighting.
+
+        3. **PROSE HYGIENE (No "Purple Prose")**
+           - Do not use a thesaurus. Simple, impactful words are better than complex, obscure ones.
+           - Do not overuse the same words.
+           - Eliminate adverbs where possible (e.g., instead of "ran quickly", use "sprinted").
+
+        4. **NARRATIVE FLOW**
+           - You are the director. Bridge the gaps between script lines with meaningful action or introspection.
+           - Ensure the pacing matches the scene (fast sentences for action, slower flow for rest).
+
+        **FORMATTING:**
+        - Output ONLY the story text.
+        - Standard novel formatting (double quotes for dialogue).
+        - No markdown tags, no 'AI:' labels.
         """
         return SystemMessage(content=prompt)
 
     def _init_human_message(self) -> HumanMessage:
         """
-        Returns the human message with length constraints.
+        Simple, length-constrained trigger.
         """
         prompt = """
-            Based on the script provided above, write a compelling novel chapter.
-            
-            Target Length: Approximately {min_words} to {max_words} words.
-            Focus: Maintain high readability and distinct character voices.
+        Using the script provided above, write the story chapter.
+
+        **Constraints:**
+        - Length: {min_words} to {max_words} words.
+        - Tone: Engaging, polished, and character-driven.
         """
         return HumanMessage(
             content=prompt.format(min_words=self.min_words, max_words=self.max_words)
