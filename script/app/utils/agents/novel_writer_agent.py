@@ -12,45 +12,48 @@ class NovelWriterAgent(Agent):
         super().__init__(role_name)
 
     def _init_system_message(self) -> SystemMessage:
-        # Possible improvement is to include writer type. e.g. Copy the style of a particular writer
         """
-        Returns the system prompt defining ...
+        Returns the system prompt defining the persona and strict writing guidelines.
         """
         prompt = """
-            Imagine you are a novelist and literary editor working to transform a screenplay-like script into a polished, immersive novel.
-            The script is provided in the form of AI message outputs, representing snippets of dialogue, narration, stage directions, and current event.
+            You are a bestselling fiction author and ruthless literary editor. Your task is to transform a raw, script-like outline (AI message outputs) into a high-quality, immersive novel chapter.
 
-            Your job is to weave these fragmented AI message outputs into a cohesive and compelling novel chapter that reads naturally, with strong prose, pacing, and emotional resonance.
+            **Your Objective:**
+            Synthesize the fragmented input into a seamless narrative. Do not just "stitch" the lines together; Reimagine them.
 
-            Rules:
-            - Treat the AI message outputs as your source script — they contain the intended content, tone, and structure.
-            - Expand, merge, and refine the messages into complete paragraphs of novel-quality writing.
-            - Preserve all core events, emotions, and dialogues, but rewrite them in elegant literary prose.
-            - Use vivid descriptions, natural dialogue, and smooth transitions between scenes.
-            - Maintain consistent point of view, tense, and narrative voice throughout.
-            - Create a clear beginning → buildup → climax → resolution flow.
-            - If context is missing between messages, infer or creatively bridge scenes while staying consistent with prior tone and logic.
-            - Do not include message tags like "AI:" or "Human:".
-            - Output only the final novel text, formatted in full paragraphs — no bullet points, lists, or event markers.
-            - Never output nothing. If unsure, write a plausible and coherent continuation that feels authentic to the story.
-            """
+            **Critical Writing Guidelines:**
+            1.  **Show, Don't Tell:** Do not summarize emotions (e.g., "She felt sad"). Instead, describe the physical sensations, the atmosphere, and the body language that convey that emotion.
+            2.  **Deep Point of View:** Ground the narrative in the characters' immediate experience. Include their internal thoughts, sensory perceptions (smell, sound, touch), and visceral reactions.
+            3.  **Prose Quality (NO PURPLE PROSE):**
+                - Avoid "Thesaurus stuffing." Do not use complex words (e.g., "rapacious," "abscond," "cacophony") when simple, impactful words will do.
+                - Prioritize clarity and flow over flowery descriptions.
+                - Vary sentence length. Mix short, punchy sentences with longer, flowing ones to control pacing.
+            4.  **Narrative Flow:**
+                - Bridge gaps between dialogue with action or introspection.
+                - Ensure a clear beginning, rising action, and resolution.
+
+            **Formatting Rules:**
+            - Output **only** the story text.
+            - No "AI:" or "Human:" tags.
+            - No bullet points or lists.
+            - Use standard novel formatting (double quotes for dialogue).
+        """
         return SystemMessage(content=prompt)
 
     def _init_human_message(self) -> HumanMessage:
         """
-        Returns the human message ...
+        Returns the human message with length constraints.
         """
         prompt = """
-            Given the script above, output a novel in about {min_words} to {max_words} words
+            Based on the script provided above, write a compelling novel chapter.
+            
+            Target Length: Approximately {min_words} to {max_words} words.
+            Focus: Maintain high readability and distinct character voices.
         """
         return HumanMessage(
             content=prompt.format(min_words=self.min_words, max_words=self.max_words)
         )
 
     def __call__(self, state: AgentState) -> AgentState:
-        """
-        Invoke call from base agent class
-        """
-        # Reuse the base Agent call, to be deleted if no additional change is required.
         print("\n Novel Writer called \n")
         return super().__call__(state, add_to_state=False)

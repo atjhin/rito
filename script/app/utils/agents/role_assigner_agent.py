@@ -42,66 +42,67 @@ class RoleAssignerAgent(Agent):
     def _init_system_message(self) -> SystemMessage:
         """
         Strong Event bias: 4 champion lines max after Event
+        Includes strict delimiter enforcement to prevent parsing errors.
         """
         champions = ", ".join(self.champions_list)
         prompt = f"""
         You are directing a cinematic League of Legends scene.
 
-        TASK
-        Choose who speaks next OR trigger an Event.
+        ### AVAILABLE ROLES (Exact Spelling Required)
+        {champions}
+        Event
 
-        OUTPUT (exact, single line)
-        <Name or Event> || <one short sentence reason>
+        ### PACING LOGIC
+        1. After an 'Event', allow only a few champion lines.
+        2. If the previous 'Event' has been resolved -> MUST output 'Event'.
+        3. Never output 'Event' twice in a row.
+        4. Alternate speakers unless clearly mid-thought or direct reply.
+        5. DECISION: If last output was Event -> Do not output Event. When uncertain -> choose Event.
 
-        NAMES (STRICT, SINGLE-TOKEN)
-        Use EXACT tokens from: {champions} OR Event.
-        Do not invent variants. If unsure, output Event.
+        ### CRITICAL OUTPUT FORMAT
+        You must output exactly ONE line containing the double-pipe delimiter "||".
+        
+        Syntax:
+        <Name or Event> || <Reason>
 
-        STYLE
-        - No punctuation/quotes before the first token
-        - Do not include extra '||' in the reason
-        - No colons/semicolons
-        - Reason is 1 sentence
-        - For Event, write a scene-level reason (do NOT start with He/She/They/<Name>)
-
-        PACE
-        - After an Event → allow only few champion lines
-        - If previous Event has been resolved → MUST output Event
-        - Never output Event twice in a row
-        - Alternate speakers unless clearly mid-thought or direct reply
-
-        DECISION ORDER
-        1) If last output was Event → Do not output Event
-        2) Strongly Favour to alternate speaker.
-        3) When uncertain → choose Event.
+        ### STRICT FORMATTING RULES
+        1. The "||" delimiter is MANDATORY. Without it, the system crashes.
+        2. Do not use colons (:), hyphens (-), or arrows (->) as separators.
+        3. <Name> must be exactly one of the Available Roles.
+        4. <Reason> must be one short sentence.
+        5. No punctuation before the name. No markdown.
+        
+        If you are completely unsure what to generate, output:
+        Event || Scene transition required.
         """
         return SystemMessage(content=prompt)
 
     def _init_human_message(self) -> HumanMessage:
         """
         Minimal, strict, with Event-first bias when uncertain.
+        Reinforces the delimiter requirement.
         """
         champions = ", ".join(self.champions_list)
+        # Create a dynamic example based on the actual list to help the LLM
+        example_champ = self.champions_list[0] if self.champions_list else "ChampionName"
+        
         prompt = f"""
-        Choose the next speaker or Event.
+        Determine the next turn.
 
-        Format (exact):
-        <Name or Event> || <one sentence reason>
+        Valid Options: {champions}, Event
 
-        Use EXACT tokens from: {champions} OR Event.
-        Do not output variants. If unsure, choose Event.
-        If choosing the same speaker as the last spoken inevitably, include the word "reasonable" to reason.
+        REQUIRED FORMAT:
+        [Option] || [Reason]
 
         Examples:
-        Zed || He answers the challenge.
-        Event || The scene shifts to a tense pause.
+        {example_champ} || They step forward to answer.
+        Event || A loud explosion interrupts the conversation.
 
-        RULES
-        No punctuation before the first token. No colons/semicolons. No extra '||'.
-        If Event, use a scene-level reason (not He/She/They/<Name>).
-        Favor frequent Event beats; keep the cadence tight.
-        Avoid choosing the same speaker as the last spoken.
-        Every reason should be unique and very different from the past.
+        CONSTRAINT:
+        You MUST include the "||" characters in your response.
+        If choosing the same speaker as the last turn, the reason must include the word "reasonable".
+
+        Output your decision now:
         """
         return HumanMessage(content=prompt)
 
