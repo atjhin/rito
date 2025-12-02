@@ -167,13 +167,14 @@ def _llm_refine_story_if_needed(story: str) -> dict:
             User input story:
             \"\"\"{story}\"\"\"
 
-            Instructions:
-            1. If the user's input forms a coherent and meaningful sentence or phrase (even if short), RETURN IT EXACTLY as written — do NOT modify, paraphrase, or shorten it.
-            2. If the input appears to be a random sequence of letters, symbols, or an incomplete sentence fragment that lacks clear meaning,
-            then rewrite it into a simple, coherent, and complete scenario (1–2 sentences, under 50 words) suitable for a dialogue-driven scene.
-            3. DO NOT add new characters, names, world details, or filler content.
-            4. Output ONLY the final scenario text, with no commentary, quotes, or formatting.
-            """
+Instructions:
+1. If the user's input forms a coherent and meaningful sentence or phrase (even if short), RETURN IT EXACTLY as written — do NOT modify, paraphrase, or shorten it. 
+2. If the user made mistakes (typos, grammar), don't change the meaning; just return it as is.
+3. If the input appears to be a random sequence of letters, symbols, or an incomplete sentence fragment that lacks clear meaning,
+   then rewrite it into a simple, coherent, and complete scenario (1–2 sentences, under 50 words) suitable for a dialogue-driven scene.
+4. DO NOT add new characters, names, world details, or filler content.
+5. Output ONLY the final scenario text, with no commentary, quotes, or formatting.
+"""
 
     resp = _gemini_model.generate_content(prompt)
     refined = (resp.text or "").strip()
