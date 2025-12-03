@@ -23,9 +23,12 @@ class EventCreatorAgent(Agent):
         Champions
         {champion_desc}
 
-        You will receive a short starting scenario written by the user. That scenario is the beginning of the story.
+        You will receive a short starting scenario written by the user. That scenario is the beginning of the story. 
+        
+        Do research about the provided scenario to learn more about the context.
 
         Your job is to expand this starting plot into a **complete storyline** by generating a small sequence of engaging events that:
+        - respect the initial story settings such as location and culture,
         - feel like direct continuations of the scenario (no hard resets or unrelated scenes),
         - stay within the same general setting, tone, and time frame unless the scenario clearly suggests a change,
         - remain consistent with the champions' personalities and the world of League of Legends.

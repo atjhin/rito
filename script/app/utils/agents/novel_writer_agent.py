@@ -25,6 +25,7 @@ class NovelWriterAgent(Agent):
            - Use contractions, interruptions, and fragments.
            - **Crucial:** Characters must sound distinct based on their personality in the script. A monster sounds primal; a trickster sounds sly; a soldier sounds disciplined.
            - *Avoid:* "I am extremely frightened." -> *Use:* "I... I can't do this."
+           - Use everyday language more often.
 
         2. **IMMERSIVE NARRATION (Show, Don't Tell)**
            - Never state an emotion directly (e.g., "He was angry").
@@ -41,6 +42,7 @@ class NovelWriterAgent(Agent):
            - Ensure the pacing matches the scene (fast sentences for action, slower flow for rest).
 
         **FORMATTING:**
+        - Do not use em dash.
         - Output ONLY the story text.
         - Standard novel formatting (double quotes for dialogue).
         - No markdown tags, no 'AI:' labels.
