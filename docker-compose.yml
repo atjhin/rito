@@ -1,7 +1,58 @@
+# Docker Compose for Local Development
+# Simulates the Cloud Run microservices architecture locally
+
+version: '3.8'
+
 services:
-  web:
-    build: .
+  # Flask API Service (Frontend)
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
     ports:
-      - "8000:5000"
-    env_file:
-      - .env
+      - "5000:8080"
+    environment:
+      - PORT=8080
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - LANGGRAPH_SERVICE_URL=http://langgraph:8080
+      - LANGGRAPH_TIMEOUT=300
+    depends_on:
+      langgraph:
+        condition: service_healthy
+    networks:
+      - rito-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # LangGraph Story Generation Service (Backend)
+  langgraph:
+    build:
+      context: ./services/langgraph
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_REGION=${S3_REGION}
+      - S3_BUCKET=${S3_BUCKET}
+    networks:
+      - rito-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  rito-network:
+    driver: bridge

@@ -1,0 +1,131 @@
+# Google Cloud Build configuration
+# Builds and deploys both services to Cloud Run
+
+steps:
+  # ============================================
+  # Build LangGraph Service
+  # ============================================
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/rito-langgraph:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/rito-langgraph:latest'
+      - '-f'
+      - 'services/langgraph/Dockerfile'
+      - 'services/langgraph'
+    id: 'build-langgraph'
+
+  # Push LangGraph image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/rito-langgraph:$COMMIT_SHA'
+    id: 'push-langgraph'
+    waitFor: ['build-langgraph']
+
+  # Deploy LangGraph to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'rito-langgraph'
+      - '--image=gcr.io/$PROJECT_ID/rito-langgraph:$COMMIT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--memory=2Gi'
+      - '--cpu=2'
+      - '--timeout=600'
+      - '--concurrency=10'
+      - '--min-instances=0'
+      - '--max-instances=5'
+      - '--no-allow-unauthenticated'  # Internal service
+      - '--set-env-vars=GOOGLE_API_KEY=${_GOOGLE_API_KEY},OPENAI_API_KEY=${_OPENAI_API_KEY},XAI_API_KEY=${_XAI_API_KEY},S3_ACCESS_KEY=${_S3_ACCESS_KEY},S3_SECRET_KEY=${_S3_SECRET_KEY},S3_REGION=${_S3_REGION},S3_BUCKET=${_S3_BUCKET}'
+    id: 'deploy-langgraph'
+    waitFor: ['push-langgraph']
+
+  # Get LangGraph service URL
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        gcloud run services describe rito-langgraph \
+          --region=${_REGION} \
+          --format='value(status.url)' > /workspace/langgraph_url.txt
+    id: 'get-langgraph-url'
+    waitFor: ['deploy-langgraph']
+
+  # ============================================
+  # Build API Service
+  # ============================================
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/rito-api:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/rito-api:latest'
+      - '-f'
+      - 'services/api/Dockerfile'
+      - 'services/api'
+    id: 'build-api'
+
+  # Push API image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/rito-api:$COMMIT_SHA'
+    id: 'push-api'
+    waitFor: ['build-api']
+
+  # Deploy API to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        LANGGRAPH_URL=$(cat /workspace/langgraph_url.txt)
+        gcloud run deploy rito-api \
+          --image=gcr.io/$PROJECT_ID/rito-api:$COMMIT_SHA \
+          --region=${_REGION} \
+          --platform=managed \
+          --memory=512Mi \
+          --cpu=1 \
+          --timeout=120 \
+          --concurrency=80 \
+          --min-instances=0 \
+          --max-instances=10 \
+          --allow-unauthenticated \
+          --set-env-vars="GOOGLE_API_KEY=${_GOOGLE_API_KEY},LANGGRAPH_SERVICE_URL=$LANGGRAPH_URL,LANGGRAPH_TIMEOUT=300"
+    id: 'deploy-api'
+    waitFor: ['push-api', 'get-langgraph-url']
+
+# Substitution variables (set these in Cloud Build trigger or command line)
+substitutions:
+  _REGION: 'us-central1'
+  _GOOGLE_API_KEY: ''
+  _OPENAI_API_KEY: ''
+  _XAI_API_KEY: ''
+  _S3_ACCESS_KEY: ''
+  _S3_SECRET_KEY: ''
+  _S3_REGION: ''
+  _S3_BUCKET: ''
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+# Images to push to Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/rito-langgraph:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/rito-langgraph:latest'
+  - 'gcr.io/$PROJECT_ID/rito-api:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/rito-api:latest'
+
+# Timeout for the entire build
+timeout: '1800s'
+

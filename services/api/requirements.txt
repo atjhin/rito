@@ -1,0 +1,17 @@
+# Web Framework
+Flask>=3.0.0
+gunicorn>=21.0
+
+# Google AI (for input validation)
+google-genai>=1.0.0
+
+# Google Auth (for Cloud Run service-to-service auth)
+google-auth>=2.0.0
+
+# HTTP Client
+httpx>=0.28.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+
