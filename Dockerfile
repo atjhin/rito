@@ -23,4 +23,4 @@ COPY wsgi.py .
 EXPOSE 5000
 
 # Prefer gunicorn (recommended on Render)
-CMD ["sh", "-c", "gunicorn -b 0.0.0.0:${PORT:-5000} wsgi:app --timeout 600 --graceful-timeout 60"]
+CMD ["sh", "-c", "gunicorn -b 0.0.0.0:${PORT:-5000} wsgi:app --workers 1 --timeout 600 --graceful-timeout 60"]
