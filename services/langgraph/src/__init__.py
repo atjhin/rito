@@ -1,0 +1,2 @@
+# LangGraph Story Generation Service
+
